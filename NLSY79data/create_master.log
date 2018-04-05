@@ -1,0 +1,1451 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /hpchome/econ/tmr17/HSsports/NLSY79data/create_master.log
+  log type:  text
+ opened on:   3 Oct 2017, 10:25:15
+
+. 
+. set mem 5g
+
+. set maxvar 32000
+
+
+. 
+. **************************************************
+. * Create all permanent variables and save all data
+. **************************************************
+. 
+. use raw.dta, clear
+
+. generat wave = year
+
+. recode wave (1970 = 1) (1971 = 2) (1972 = 3) (1973 = 4) (1974 = 5) (1975 = 6)
+>  (1976 = 7) (1977 = 8) (1978 = 9) (1979 = 10) (1980 = 11) (1981 = 12) (1982 =
+>  13) (1983 = 14) (1984 = 15) (1985 = 16) (1986 = 17) (1987 = 18) (1988 = 19) 
+> (1989 = 20) (1990 = 21) (1991 = 22) (1992 = 23) (1993 = 24) (1994 = 25) (1996
+>  = 26) (1998 = 27) (2000 = 28) (2002 = 29) (2004 = 30) (2006 = 31) (2008 = 32
+> ) (2010 = 33) (2012 = 34) 
+(wave: 431324 changes made)
+
+. xtset id wave
+       panel variable:  id (strongly balanced)
+        time variable:  wave, 1 to 34
+                delta:  1 unit
+
+. 
+. * Bring in data on CPI and minimum wage
+. run cpi_min_wage.do
+
+. 
+. * Create various demographic variables
+. do create_demog.do
+
+. ***************************************************
+. * Generate various demographic variables
+. ***************************************************
+. 
+. * age
+. drop  age
+
+. gener age = year-dob_yr1979-1
+
+. label var age "AGE AS OF JAN 1"
+
+. gener birthq  = 1*inrange(dob_mo1979,1,3)+2*inrange(dob_mo1979,4,6)+3*inrange
+> (dob_mo1979,7,9)+4*inrange(dob_mo1979,10,12)
+
+. gener birthmo = dob_mo1979
+
+. gener birthyr = dob_yr1979
+
+. 
+. * missing parent's education
+. generat m_hgcMoth = (hgcMoth>=.)
+
+. replace hgcMoth = 0 if m_hgcMoth==1
+(27472 real changes made)
+
+. generat m_hgcFath = (hgcFath>=.)
+
+. replace hgcFath = 0 if m_hgcFath==1
+(61404 real changes made)
+
+. label var m_hgcMoth "MISSING MOTHER'S HGC"
+
+. label var m_hgcFath "MISSING FATHER'S HGC"
+
+. 
+. ** Fix AFQT variables
+. generat m_afqt = mi(afqt)
+
+. replace afqt   = 0 if mi(afqt)
+(27472 real changes made)
+
+. foreach var in AR CS MK NO PC WK {
+  2.         generat m_asvab`var' = mi(asvab`var')
+  3.         replace asvab`var' = 0 if mi(asvab`var')
+  4. }
+(27472 real changes made)
+(27472 real changes made)
+(27472 real changes made)
+(27472 real changes made)
+(27472 real changes made)
+(27472 real changes made)
+
+. 
+. * Check all missings accounted for
+. foreach V in hgcMoth hgcFath afqt asvabAR asvabCS asvabMK asvabNO asvabPC asv
+> abWK {
+  2.         assert !missing( `V')
+  3.         count if m_`V'
+  4.         assert r(N)~=0
+  5. }
+27472
+61404
+27472
+27472
+27472
+27472
+27472
+27472
+27472
+
+. 
+. * Fix heights so BMI is a valid measure
+. replace height = . if inrange(height,80.01,.)
+(569 real changes made, 569 to missing)
+
+. bys id (year): egen numHeightObs = count(height)
+
+. 
+. gen firstHeightYrA = year if !mi(height)
+(366123 missing values generated)
+
+. bys id (year): egen firstHeightYr = min(firstHeightYrA)
+(5066 missing values generated)
+
+. gen firstHeightA = height if year==firstHeightYr
+(418787 missing values generated)
+
+. bys id (year): egen firstHeight = mean(firstHeightA)
+(5066 missing values generated)
+
+. drop firstHeightA firstHeightYrA
+
+. 
+. gen lastHeightYrA = year if !mi(height)
+(366123 missing values generated)
+
+. bys id (year): egen lastHeightYr = max(lastHeightYrA)
+(5066 missing values generated)
+
+. gen lastHeightA = height if year==lastHeightYr
+(418787 missing values generated)
+
+. bys id (year): egen lastHeight = mean(lastHeightA)
+(5066 missing values generated)
+
+. drop lastHeightA lastHeightYrA
+
+. 
+. bys id (year): egen maxHeight = max(height)
+(5066 missing values generated)
+
+. bys id (year): egen minHeight = min(height)
+(5066 missing values generated)
+
+. gen heightFlag = (maxHeight - minHeight>6) & !mi(maxHeight) & !mi(minHeight)
+
+. 
+. gen heightTrend = (lastHeight - firstHeight)/(lastHeightYr - firstHeightYr)
+(12478 missing values generated)
+
+. 
+. replace height = . if heightTrend<-.05 | numHeightObs<2
+(5772 real changes made, 5772 to missing)
+
+. replace height = . if height<58
+(278 real changes made, 278 to missing)
+
+. 
+. bys id (year): egen heightSD = sd(height)
+(50660 missing values generated)
+
+. replace height = . if heightSD>4
+(344 real changes made, 344 to missing)
+
+. 
+. * Interpolate missing heights:
+. bys id (year): ipolate height year, gen(heightSmooth)
+(241487 missing values generated)
+
+. bys id (year): ipolate height year, gen(heightSmoother) epolate
+(52972 missing values generated)
+
+. 
+. * create BMI measure (bmi =  weight (lb) / [height (in)]^2 x 703)
+. gen bmiA = weight/(heightSmooth^2)*703
+(285866 missing values generated)
+
+. gen bmiB = weight/(heightSmoother^2)*703
+(273251 missing values generated)
+
+. 
+. replace bmiA = . if bmiA>40 | bmiA<18
+(5339 real changes made, 5339 to missing)
+
+. replace bmiB = . if bmiB>40 | bmiB<18
+(6095 real changes made, 6095 to missing)
+
+. 
+. gen overweight = inrange(bmiA,25.01,30) if mi(reason_noninterview)
+(73509 missing values generated)
+
+. gen obese = inrange(bmiA,30.01,.)       if mi(reason_noninterview)
+(73509 missing values generated)
+
+. gen ovrwgtObese = inrange(bmiA,25.01,.) if mi(reason_noninterview)
+(73509 missing values generated)
+
+. 
+. * foreignBorn
+. gen foreignBorn = country_born==2
+
+. label var foreignBorn "FOREIGN BORN DUMMY"
+
+. 
+. * year entered us if foreign born
+. replace yearEnteredUS = yearEnteredUS+1900 if yearEnteredUS<.
+yearEnteredUS was byte now int
+(28900 real changes made)
+
+. 
+. * race
+. gen black    = race_screen==2
+
+. gen hispanic = race_screen==1
+
+. gen white    = race_screen==3 & ~inlist(ethnicity,2,13,14,26)
+
+. gen asian    = race_screen==3 &  inlist(ethnicity,2,13,14,26)
+
+. gen race     = 1 if white
+(176426 missing values generated)
+
+. replace race = 2 if black
+(107916 real changes made)
+
+. replace race = 3 if hispanic
+(68068 real changes made)
+
+. replace race = 4 if asian
+(442 real changes made)
+
+. assert race != 0
+
+. lab var white "WHITE"
+
+. lab var black "BLACK"
+
+. lab var hispanic "HISPANIC"
+
+. lab var asian "ASIAN"
+
+. lab var race "RACE"
+
+. 
+. * female
+. gen female = sex==2
+
+. label var female "FEMALE"
+
+. 
+. * birth cohorts
+. gen     born1957 = dob_yr==1957
+
+. gen     born1958 = dob_yr==1958
+
+. gen     born1959 = dob_yr==1959
+
+. gen     born1960 = dob_yr==1960
+
+. gen     born1961 = dob_yr==1961
+
+. gen     born1962 = dob_yr==1962
+
+. gen     born1963 = dob_yr==1963
+
+. gen     born1964 = dob_yr==1964
+
+. lab var born1957 "BIRTH COHORT DUMMY 1957"
+
+. lab var born1958 "BIRTH COHORT DUMMY 1958"
+
+. lab var born1959 "BIRTH COHORT DUMMY 1959"
+
+. lab var born1960 "BIRTH COHORT DUMMY 1960"
+
+. lab var born1961 "BIRTH COHORT DUMMY 1961"
+
+. lab var born1962 "BIRTH COHORT DUMMY 1962"
+
+. lab var born1963 "BIRTH COHORT DUMMY 1963"
+
+. lab var born1964 "BIRTH COHORT DUMMY 1964"
+
+. 
+. * live with mom at 14
+. gen       liveWithMom14  = (live_with_14==11) | (live_with_14==21) | (live_wi
+> th_14==31) | (live_with_14==41) | (live_with_14==51) | (live_with_14==91)
+
+. label var liveWithMom14  "LIVE WITH MOTHER AT AGE 14"
+
+. gen       femaleHeadHH14 = (live_with_14==51) | (live_with_14==52) | (live_wi
+> th_14==53) | (live_with_14==54) | (live_with_14==91) | (live_with_14==93)
+
+. label var femaleHeadHH14 "FEMALE HEADED HOUSEHOLD AT AGE 14"
+
+. 
+. * oversample dummies
+. gen     oversampleRace     = (sample_id==10 | sample_id==11 | sample_id==13 |
+>  sample_id==14)
+
+. gen     oversamplePoor     = (sample_id==9  | sample_id==12)
+
+. gen     oversampleMilitary = (sample_id>=15 & sample_id<= 20)
+
+. lab var oversampleRace     "OVERSAMPLE - BLACKS AND HISPANICS"
+
+. lab var oversamplePoor     "OVERSAMPLE - POOR WHITES"
+
+. lab var oversampleMilitary "OVERSAMPLE - MILITARY"
+
+. 
+. * deflate family income
+. sort id year
+
+. by id: replace famInc1978 = famInc1978/cpi[9]
+(429658 real changes made, 84694 to missing)
+
+. replace famInc1978 = 1 if famInc1978==0
+(1666 real changes made)
+
+. generat lnfamInc78 = ln(famInc1978)
+(84694 missing values generated)
+
+. replace famInc1978 = famInc1978/1000
+(346630 real changes made)
+
+. 
+. generat m_famInc1978=(famInc1978>=.)
+
+. replace famInc1978 = 0 if m_famInc1978==1
+(84694 real changes made)
+
+. replace lnfamInc78 = 0 if m_famInc1978==1
+(84694 real changes made)
+
+. lab var famInc1978   "FAMILY INCOME IN 1978, 1000's of 1982-4 $"
+
+. lab var lnfamInc78   "LOG FAMILY INCOME IN 1978, 1982-4 $"
+
+. lab var m_famInc1978 "MISSING FAMILY INCOME IN 1978"
+
+. 
+. * weights
+. rename      svywgt svywgt_cross
+
+. gen         svywgt_temp = svywgt_cross if year==1979
+(418638 missing values generated)
+
+. by id: egen svywgt = max(svywgt_temp)
+
+. drop        svywgt_temp
+
+. lab var     svywgt "WEIGHT FROM FIRST YEAR OF SURVEY"
+
+. 
+. *============================================================================
+. * missed interviews
+. * variables that flag if the year is missing, how long the missing has 
+. *  gone on, how long the missing lasts, and if it's the last missing spell
+. *  Also, variables that list whether the element is the first after a spell
+. *  and the last year of data before the spell.
+. *============================================================================
+. sort id year
+
+. gen         missInt = ~mi(reason_noninterview)
+
+. by id: egen everMissInt = max(missInt)
+
+. gen         ageAtMissInt = age*missInt
+
+. gen         yearMissInt = year*missInt
+
+. 
+. gen            missIntCum = 0
+
+. by id: replace missIntCum = missIntCum[_n-1] + 1 if missInt[_n]==1
+(73509 real changes made)
+
+. 
+. gsort +id -year
+
+. gen            missIntLength = missIntCum
+
+. by id: replace missIntLength = missIntLength[_n-1] if missIntCum[_n]!=0 & mis
+> sIntCum[_n-1]!=0 & year<1994
+(22900 real changes made)
+
+. 
+. gen            missIntLastSpell = 0
+
+. by id: replace missIntLastSpell = 1 if missIntCum[_n]!=0 & (year==1994 | miss
+> IntLastSpell[_n-1]==1)
+(23963 real changes made)
+
+. sort id year
+
+. 
+. by id: gen     missIntEnd = (missInt[_n-1]==1) & (missInt[_n]==0) & (year<=19
+> 94)
+
+. 
+. by id: gen     missIntEndLength = missIntEnd[_n]*missIntLength[_n-1]
+(12686 missing values generated)
+
+. replace        missIntEndLength = 0 if year==1970
+(12686 real changes made)
+
+. 
+. gen            missIntFirstYear = 0
+
+. by id: replace missIntFirstYear = year[_n]               if missIntCum[_n]==1
+(11596 real changes made)
+
+. by id: replace missIntFirstYear = missIntFirstYear[_n-1] if missIntCum[_n]>1
+(61913 real changes made)
+
+. 
+. gen            missIntLongestSpellYet = missIntLength
+
+. by id: replace missIntLongestSpellYet = missIntLongestSpellYet[_n-1] if missI
+> ntLongestSpellYet<missIntLongestSpellYet[_n-1] & _n>1
+(36428 real changes made)
+
+. 
+. by id: gen     missIntInvalidPeriod   = missIntLongestSpellYet[_n]>=3 | missI
+> ntLastSpell[_n]==1
+
+. 
+. by id: gen     lastValidInt           = missIntInvalidPeriod[_n]==0 & missInt
+> InvalidPeriod[_n+1]==1
+
+. 
+. gen            temp_date              = mdy(interview_mo,1,year) if lastValid
+> Int
+(427138 missing values generated)
+
+. by id: egen    lastValidIntDate       = max(temp_date)
+(289000 missing values generated)
+
+. format         lastValidIntDate %td
+
+. drop           temp_date
+
+. 
+. gen            temp_date              = mdy(interview_mo,1,year) if missIntLa
+> stSpell==0 & missIntLastSpell[_n+1]==1
+(427529 missing values generated)
+
+. by id: egen    beforeLastSpellIntDate = max(temp_date)
+(302294 missing values generated)
+
+. format         beforeLastSpellIntDate %td
+
+. drop           temp_date
+
+. 
+. label var missInt                "MISSED INTERVIEW IN CURRENT YEAR"
+
+. label var missIntCum             "RUNNING TALLY OF CURRENT MISSED INTERVIEW S
+> PELL"
+
+. label var missIntLength          "LENGTH OF CURRENT MISSED INTERVIEW SPELL"
+
+. label var missIntLastSpell       "ELEMENT OF LAST MISSED INTERVIEW SPELL"
+
+. label var missIntEnd             "FIRST OBS AFTER MISSED INTERVIEW SPELL"
+
+. label var missIntEndLength       "LENGTH OF MISSED INTERVIEW SPELL THAT ENDED
+>  THE PREVIOUS YEAR"
+
+. label var missIntFirstYear       "YEAR OF FIRST OBS OF MISSED INTERVIEW SPELL
+> " 
+
+. label var missIntLongestSpellYet "LENGTH OF LONGEST SPELL INDIV HAS EXPERIENC
+> E BY T"
+
+. label var missIntInvalidPeriod   "ELEMENT OF INVALID INTERVIEW PERIOD"
+
+. label var lastValidInt           "LAST VALID INTERVIEW"
+
+. label var lastValidIntDate       "DATE OF LAST VALID INTERVIEW"
+
+. 
+. foreach x of numlist 1/18 {
+  2.         local temp=`x'+9
+  3.         bys id: gen R`x'interviewDate  = ym(interview_yr[`temp'],interview
+> _mo[`temp'])
+  4.         format R`x'interviewDate %tm
+  5. }
+(18530 missing values generated)
+(16694 missing values generated)
+(19142 missing values generated)
+(15810 missing values generated)
+(20978 missing values generated)
+(60928 missing values generated)
+(69054 missing values generated)
+(74834 missing values generated)
+(75514 missing values generated)
+(70754 missing values generated)
+(76534 missing values generated)
+(124712 missing values generated)
+(124780 missing values generated)
+(124950 missing values generated)
+(129098 missing values generated)
+(137700 missing values generated)
+(145758 missing values generated)
+
+. 
+. * get proportion of people who ever missed any number of consecutive intervie
+> ws
+. foreach x of numlist 1/11 {
+  2.         by id: gen miss_`x'_intA  = (missIntLength==`x')
+  3. }
+
+. foreach x of numlist 1/11 {
+  2.         by id: egen miss_`x'_intB  = mean(miss_`x'_intA )
+  3. }
+
+. foreach x of numlist 1/11 {
+  2.         by id: gen ever_miss_`x'_int  = (miss_`x'_intB >0)
+  3. }
+
+. drop miss_*intA miss_*intB
+
+. 
+. gen everMiss3plusInt = ((ever_miss_3_int)|(ever_miss_4_int)|(ever_miss_5_int)
+> |(ever_miss_6_int)|(ever_miss_7_int)|(ever_miss_8_int)|(ever_miss_9_int)|(eve
+> r_miss_10_int)|(ever_miss_11_int))
+
+. 
+. * get proportion of people who return after missing any number of consecutive
+>  interviews
+. foreach x of numlist 1/11 {
+  2.         by id: gen return_after_`x'_miss_intA  = (missIntLength[_n-1]==`x'
+>   & missIntLength[_n]==0 & year<=1994)
+  3. }
+
+. foreach x of numlist 1/11 {
+  2.         by id: egen return_after_`x'_miss_intB  = mean(return_after_`x'_mi
+> ss_intA  & year<=1994)
+  3. }
+
+. foreach x of numlist 1/11 {
+  2.         by id: gen ever_return_after_`x'_miss_int  = (return_after_`x'_mis
+> s_intB >0  & year<=1994)
+  3. }
+
+. drop return_after*A return_after*B
+
+. 
+. gen everReturnAfter3plusMissInt = ((ever_return_after_3_miss_int)|(ever_retur
+> n_after_4_miss_int)|(ever_return_after_5_miss_int)|(ever_return_after_6_miss_
+> int)|(ever_return_after_7_miss_int)|(ever_return_after_8_miss_int)|(ever_retu
+> rn_after_9_miss_int)|(ever_return_after_10_miss_int)|(ever_return_after_11_mi
+> ss_int))
+
+. 
+. * Count number of people who have multiple missing interview spells lasting d
+> ifferent lengths
+. foreach x of numlist 1/11 {
+  2.         count if ever_return_after_1_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+ 1907
+  171
+   72
+   40
+   21
+    6
+   11
+    4
+    1
+    0
+    1
+
+. foreach x of numlist 2/11 {
+  2.         count if ever_return_after_2_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+  485
+   28
+   11
+    8
+    2
+    1
+    1
+    0
+    0
+    0
+
+. foreach x of numlist 3/11 {
+  2.         count if ever_return_after_3_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+  241
+   12
+    3
+    1
+    0
+    0
+    0
+    0
+    0
+
+. foreach x of numlist 4/11 {
+  2.         count if ever_return_after_4_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+  132
+    0
+    1
+    0
+    0
+    0
+    0
+    0
+
+. foreach x of numlist 5/11 {
+  2.         count if ever_return_after_5_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+   76
+    2
+    0
+    0
+    0
+    0
+    0
+
+. foreach x of numlist 6/11 {
+  2.         count if ever_return_after_6_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+   46
+    0
+    0
+    0
+    0
+    0
+
+. foreach x of numlist 7/11 {
+  2.         count if ever_return_after_7_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+   39
+    0
+    0
+    0
+    0
+
+. foreach x of numlist 8/11 {
+  2.         count if ever_return_after_8_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+   25
+    0
+    0
+    0
+
+. foreach x of numlist 9/11 {
+  2.         count if ever_return_after_9_miss_int ==1 & ever_return_after_`x'_
+> miss_int==1 & year==1979
+  3. }
+   15
+    0
+    0
+
+. foreach x of numlist 10/11 {
+  2.         count if ever_return_after_10_miss_int ==1 & ever_return_after_`x'
+> _miss_int==1 & year==1979
+  3. }
+    8
+    0
+
+. foreach x of numlist 11/11 {
+  2.         count if ever_return_after_11_miss_int ==1 & ever_return_after_`x'
+> _miss_int==1 & year==1979
+  3. }
+    8
+
+. 
+. foreach x of numlist 1/11 {
+  2.         sum ever_return_after_`x'_miss_int if ever_miss_`x'_int==1 & year=
+> =1979
+  3. }
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+~_1_miss_int |      4623    .4125027    .4923379          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~2_miss_int |      2698    .1797628    .3840609          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~3_miss_int |      2010    .1199005     .324926          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~4_miss_int |      3112    .0424165    .2015697          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~5_miss_int |      2880    .0263889    .1603167          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~6_miss_int |      2704    .0170118    .1293392          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~7_miss_int |      2522    .0154639    .1234132          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~8_miss_int |      2351    .0106338    .1025923          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~9_miss_int |      2267    .0066167    .0810913          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+e~0_miss_int |      3218     .002486    .0498057          0          1
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+~11_miss_int |      3204    .0024969    .0499141          0          1
+
+. 
+. sum everReturnAfter3plusMissInt if everMiss3plusInt==1 & year==1979
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+everReturn~t |      5181    .1102104     .313182          0          1
+
+. 
+. tab ageAtMissInt if ageAtMissInt>0, mi
+
+ageAtMissIn |
+          t |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         15 |         35        0.05        0.05
+         16 |         78        0.11        0.15
+         17 |        123        0.17        0.32
+         18 |        169        0.23        0.55
+         19 |        297        0.40        0.95
+         20 |        373        0.51        1.46
+         21 |        523        0.71        2.17
+         22 |        673        0.92        3.09
+         23 |        778        1.06        4.15
+         24 |      1,011        1.38        5.52
+         25 |      1,355        1.84        7.37
+         26 |      1,905        2.59        9.96
+         27 |      2,475        3.37       13.32
+         28 |      2,656        3.61       16.94
+         29 |      2,843        3.87       20.81
+         30 |      2,767        3.76       24.57
+         31 |      2,936        3.99       28.56
+         32 |      2,943        4.00       32.57
+         33 |      3,188        4.34       36.90
+         34 |      2,843        3.87       40.77
+         35 |      2,670        3.63       44.40
+         36 |      2,305        3.14       47.54
+         37 |      2,076        2.82       50.36
+         38 |      2,431        3.31       53.67
+         39 |      2,212        3.01       56.68
+         40 |      2,509        3.41       60.09
+         41 |      2,314        3.15       63.24
+         42 |      2,607        3.55       66.79
+         43 |      2,360        3.21       70.00
+         44 |      2,620        3.56       73.56
+         45 |      2,383        3.24       76.80
+         46 |      2,636        3.59       80.39
+         47 |      2,424        3.30       83.69
+         48 |      2,708        3.68       87.37
+         49 |      2,012        2.74       90.11
+         50 |      2,202        3.00       93.10
+         51 |      1,533        2.09       95.19
+         52 |      1,737        2.36       97.55
+         53 |        893        1.21       98.77
+         54 |        906        1.23      100.00
+------------+-----------------------------------
+      Total |     73,509      100.00
+
+. tab ageAtMissInt dob_yr if ageAtMissInt>0, mi col nofreq
+
+ageAtMissI |                   DATE OF BIRTH - YR
+        nt |      1957       1958       1959       1960       1961 |     Total
+-----------+-------------------------------------------------------+----------
+        15 |      0.00       0.00       0.00       0.00       0.00 |      0.05 
+        16 |      0.00       0.00       0.00       0.00       0.00 |      0.11 
+        17 |      0.00       0.00       0.00       0.00       0.00 |      0.17 
+        18 |      0.00       0.00       0.00       0.00       0.74 |      0.23 
+        19 |      0.00       0.00       0.00       1.02       0.80 |      0.40 
+        20 |      0.00       0.00       0.73       0.73       0.88 |      0.51 
+        21 |      0.00       0.72       0.69       0.81       0.79 |      0.71 
+        22 |      0.61       0.64       0.73       0.60       1.01 |      0.92 
+        23 |      0.64       0.77       0.59       0.87       1.31 |      1.06 
+        24 |      0.64       0.62       0.73       2.69       2.02 |      1.38 
+        25 |      0.54       0.76       3.10       2.93       2.45 |      1.84 
+        26 |      0.75       3.12       3.23       3.09       2.39 |      2.59 
+        27 |      3.19       3.29       3.46       3.17       2.10 |      3.37 
+        28 |      3.45       3.39       3.39       3.03       2.49 |      3.61 
+        29 |      3.68       3.51       3.28       3.20       4.68 |      3.87 
+        30 |      3.58       3.34       3.52       4.84       4.68 |      3.76 
+        31 |      3.43       3.47       5.10       4.85       4.70 |      3.99 
+        32 |      3.49       5.10       5.15       4.81       4.92 |      4.00 
+        33 |      5.26       5.11       5.15       4.93       0.00 |      4.34 
+        34 |      5.24       5.10       5.35       0.00       5.53 |      3.87 
+        35 |      5.29       5.24       0.00       5.39       0.00 |      3.63 
+        36 |      5.38       0.00       5.59       0.00       6.11 |      3.14 
+        37 |      0.00       5.47       0.00       5.65       0.00 |      2.82 
+        38 |      5.45       0.00       5.74       0.00       6.89 |      3.31 
+        39 |      0.00       5.63       0.00       6.27       0.00 |      3.01 
+        40 |      5.66       0.00       6.00       0.00       7.30 |      3.41 
+        41 |      0.00       5.96       0.00       6.75       0.00 |      3.15 
+        42 |      5.93       0.00       6.36       0.00       7.47 |      3.55 
+        43 |      0.00       6.34       0.00       6.88       0.00 |      3.21 
+        44 |      6.15       0.00       6.40       0.00       7.47 |      3.56 
+        45 |      0.00       6.39       0.00       6.83       0.00 |      3.24 
+        46 |      6.18       0.00       6.29       0.00       7.31 |      3.59 
+        47 |      0.00       6.46       0.00       6.62       0.00 |      3.30 
+        48 |      6.29       0.00       6.27       0.00       7.86 |      3.68 
+        49 |      0.00       6.32       0.00       6.70       0.00 |      2.74 
+        50 |      6.21       0.00       6.48       0.00       8.10 |      3.00 
+        51 |      0.00       6.52       0.00       7.34       0.00 |      2.09 
+        52 |      6.33       0.00       6.66       0.00       0.00 |      2.36 
+        53 |      0.00       6.70       0.00       0.00       0.00 |      1.21 
+        54 |      6.62       0.00       0.00       0.00       0.00 |      1.23 
+-----------+-------------------------------------------------------+----------
+     Total |    100.00     100.00     100.00     100.00     100.00 |    100.00 
+
+
+ageAtMissI |        DATE OF BIRTH - YR
+        nt |      1962       1963       1964 |     Total
+-----------+---------------------------------+----------
+        15 |      0.00       0.00       0.70 |      0.05 
+        16 |      0.00       0.72       0.62 |      0.11 
+        17 |      0.75       0.58       0.70 |      0.17 
+        18 |      0.66       0.70       0.66 |      0.23 
+        19 |      1.01       0.64       0.92 |      0.40 
+        20 |      0.80       0.89       0.92 |      0.51 
+        21 |      1.09       1.10       1.42 |      0.71 
+        22 |      1.39       1.70       1.76 |      0.92 
+        23 |      1.89       2.01       1.88 |      1.06 
+        24 |      2.13       2.37       1.58 |      1.38 
+        25 |      2.04       1.97       1.86 |      1.84 
+        26 |      1.89       2.43       5.05 |      2.59 
+        27 |      2.32       4.91       5.11 |      3.37 
+        28 |      4.51       4.85       4.89 |      3.61 
+        29 |      4.46       4.90       4.91 |      3.87 
+        30 |      4.62       5.14       0.00 |      3.76 
+        31 |      4.95       0.00       5.57 |      3.99 
+        32 |      0.00       5.68       0.00 |      4.00 
+        33 |      5.49       0.00       6.10 |      4.34 
+        34 |      0.00       6.15       0.00 |      3.87 
+        35 |      6.23       0.00       6.98 |      3.63 
+        36 |      0.00       7.00       0.00 |      3.14 
+        37 |      6.95       0.00       7.52 |      2.82 
+        38 |      0.00       7.73       0.00 |      3.31 
+        39 |      7.51       0.00       7.96 |      3.01 
+        40 |      0.00       7.56       0.00 |      3.41 
+        41 |      7.72       0.00       7.98 |      3.15 
+        42 |      0.00       7.62       0.00 |      3.55 
+        43 |      7.66       0.00       7.72 |      3.21 
+        44 |      0.00       7.27       0.00 |      3.56 
+        45 |      7.59       0.00       8.24 |      3.24 
+        46 |      0.00       7.82       0.00 |      3.59 
+        47 |      7.84       0.00       8.90 |      3.30 
+        48 |      0.00       8.24       0.00 |      3.68 
+        49 |      8.51       0.00       0.00 |      2.74 
+        50 |      0.00       0.00       0.00 |      3.00 
+        51 |      0.00       0.00       0.00 |      2.09 
+        52 |      0.00       0.00       0.00 |      2.36 
+        53 |      0.00       0.00       0.00 |      1.21 
+        54 |      0.00       0.00       0.00 |      1.23 
+-----------+---------------------------------+----------
+     Total |    100.00     100.00     100.00 |    100.00 
+
+
+. tab yearMissInt if yearMissInt>0, mi
+
+yearMissInt |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       1980 |        545        0.74        0.74
+       1981 |        491        0.67        1.41
+       1982 |        563        0.77        2.18
+       1983 |        465        0.63        2.81
+       1984 |        617        0.84        3.65
+       1985 |      1,792        2.44        6.08
+       1986 |      2,031        2.76        8.85
+       1987 |      2,201        2.99       11.84
+       1988 |      2,221        3.02       14.86
+       1989 |      2,081        2.83       17.69
+       1990 |      2,250        3.06       20.76
+       1991 |      3,668        4.99       25.75
+       1992 |      3,670        4.99       30.74
+       1993 |      3,675        5.00       35.74
+       1994 |      3,795        5.16       40.90
+       1996 |      4,050        5.51       46.41
+       1998 |      4,287        5.83       52.24
+       2000 |      4,653        6.33       58.57
+       2002 |      4,962        6.75       65.32
+       2004 |      5,025        6.84       72.16
+       2006 |      5,032        6.85       79.00
+       2008 |      4,929        6.71       85.71
+       2010 |      5,121        6.97       92.67
+       2012 |      5,385        7.33      100.00
+------------+-----------------------------------
+      Total |     73,509      100.00
+
+. 
+. 
+. lab var birthq  "Quarter of birth"
+
+. lab var birthmo "Month of birth"
+
+. lab var birthyr "Year of birth"
+
+. 
+. ** Variables to keep:
+. global keeperdemog id year wave age birthq birthmo birthyr height weight over
+> weight obese ovrwgtObese hgcMoth m_hgcMoth m_hgcFath hgcFath asvab* m_asvab* 
+> afqt m_afqt rotter_score famInc1978 lnfamInc78 m_famInc1978 svywgt *iss* last
+> Valid* foreignBorn yearEnteredUS black hispanic white asian race female born*
+>  liveWithMom14 femaleHeadHH14 oversample*
+
+. 
+end of do-file
+
+. 
+. * Create enrollment status and hgc
+. do create_school.do
+
+. * Highest grade completed
+. gen hgc = high_grade_comp_May
+(188044 missing values generated)
+
+. 
+. gen grad4yr = hgc>=16 & ~mi(hgc)
+
+. 
+. bys id (wave): egen maxged = max(diploma_or_ged)
+(61132 missing values generated)
+
+. gen ged = inlist(maxged,2,3)
+
+. 
+. gen gradHS  = (hgc>=12 & ~mi(hgc)) | ged
+
+. 
+. replace gradHS  = . if !mi(reason_noninterview)
+(73509 real changes made, 73509 to missing)
+
+. replace grad4yr = . if !mi(reason_noninterview)
+(73509 real changes made, 73509 to missing)
+
+. 
+. 
+. generat commOrg        = HSclubCYO==1            if !inlist(HSclubCYO,.,.i,.n
+> ,.r)
+(21454 missing values generated)
+
+. generat hobbyClub      = HSclubHobby==2          if !inlist(HSclubHobby,.,.i,
+> .n,.r)
+(21454 missing values generated)
+
+. generat studentCouncil = HSclubStudentCouncil==3 if !inlist(HSclubStudentCoun
+> cil,.,.i,.n,.r)
+(21454 missing values generated)
+
+. generat yrbookPaper    = HSclubYrbookPaper==4    if !inlist(HSclubYrbookPaper
+> ,.,.i,.n,.r)
+(21454 missing values generated)
+
+. generat athlete        = HSclubAthletics==5      if !inlist(HSclubAthletics,.
+> ,.i,.n,.r)
+(21454 missing values generated)
+
+. generat strongAthlete  = HSclubMostActive==5     if !inlist(HSclubMostActive,
+> .,.i,.n,.r)
+(21862 missing values generated)
+
+. generat performArts    = HSclubPerfArts==6       if !inlist(HSclubPerfArts,.,
+> .i,.n,.r)
+(21454 missing values generated)
+
+. generat nhs            = HSclubNHS==7            if !inlist(HSclubNHS,.,.i,.n
+> ,.r)
+(21454 missing values generated)
+
+. generat otherClub      = HSclubOther==8          if !inlist(HSclubOther,.,.i,
+> .n,.r)
+(21454 missing values generated)
+
+. generat no_clubs       = HSclubNone==0           if !inlist(HSclubNone,.,.i,.
+> n,.r)
+(21522 missing values generated)
+
+. 
+. lab var hgc            "Highest Grade Completed (years)"
+
+. lab var ged            "Holds a GED"
+
+. lab var gradHS         "Absorbing indicator for HS graduation (or GED)"
+
+. lab var grad4yr        "Absorbing indicator for 4-year college graduation"
+
+. lab var commOrg        "Participated in comm. youth organizations in high sch
+> ool"
+
+. lab var hobbyClub      "Participated in school-sponsored hobby clubs in high 
+> school"
+
+. lab var studentCouncil "Participated in student council in high school"
+
+. lab var yrbookPaper    "Participated in yearbook / newspaper in high school"
+
+. lab var athlete        "Participated in athletics in high school"
+
+. lab var strongAthlete  "Participated in athletics most actively in high schoo
+> l"
+
+. lab var performArts    "Participated in performing arts in high school"
+
+. lab var nhs            "Participated in National Honor Society in high school
+> "
+
+. lab var otherClub      "Participated in some other club in high school"
+
+. lab var no_clubs       "Did not participate in any clubs in high school"
+
+. 
+. ** Variables to keep:
+. global keeperschool hgc ged gradHS grad4yr commOrg hobbyClub studentCouncil y
+> rbookPaper athlete strongAthlete performArts nhs otherClub no_clubs
+
+. 
+end of do-file
+
+. 
+. * Create work status vars, wages, and job characteristics
+. do create_work.do
+
+. * create outcomes for the main job in each year: (if someone is working multi
+> ple jobs, break ties with lower numbered job
+. egen numIntWeekJobs = rowtotal(intWeekWorking*)
+
+. * replace intWeekWorking
+. 
+. gen wage  = .
+(431324 missing values generated)
+
+. gen hours = .
+(431324 missing values generated)
+
+. gen occ   = .
+(431324 missing values generated)
+
+. gen ind   = .
+(431324 missing values generated)
+
+. gen class = .
+(431324 missing values generated)
+
+. forvalues x=59(-1)1 {
+  2.         qui replace wage  = wage`x'  if intWeekWorking`x'==1
+  3.         qui replace hours = hours`x' if intWeekWorking`x'==1
+  4.         qui replace occ   = occ`x'   if intWeekWorking`x'==1
+  5.         qui replace ind   = ind`x'   if intWeekWorking`x'==1
+  6.         qui replace class = class`x' if intWeekWorking`x'==1
+  7. }
+
+. generat selfemp = class==3
+
+. 
+. qui replace wage  = wksWorkLastYr if wksWorkLastYr>=.
+
+. qui replace hours = wksWorkLastYr if wksWorkLastYr>=.
+
+. qui replace occ   = wksWorkLastYr if wksWorkLastYr>=.
+
+. qui replace ind   = wksWorkLastYr if wksWorkLastYr>=.
+
+. qui replace class = wksWorkLastYr if wksWorkLastYr>=.
+
+. 
+. 
+. * top- and bottom-code wages at $2 and $50
+. local top_limit 7500
+
+. local bot_limit 200
+
+. sum wage, d
+
+                            wage
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           96              0
+ 5%          299              0
+10%          350              0       Obs              157715
+25%          500              0       Sum of Wgt.      157715
+
+50%          850                      Mean           1546.503
+                        Largest       Std. Dev.      30467.59
+75%         1410        3300000
+90%         2259        3333433       Variance       9.28e+08
+95%         3076        3340000       Skewness       114.2168
+99%         6201        6000000       Kurtosis       15612.18
+
+. qui replace wage = `top_limit' if wage>=`top_limit' & ~mi(wage)
+
+. qui replace wage = `bot_limit' if wage<=`bot_limit' & ~mi(wage)
+
+. sum wage, d
+
+                            wage
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%          200            200
+ 5%          299            200
+10%          350            200       Obs              157715
+25%          500            200       Sum of Wgt.      157715
+
+50%          850                      Mean           1160.563
+                        Largest       Std. Dev.      1062.982
+75%         1410           7500
+90%         2259           7500       Variance        1129930
+95%         3076           7500       Skewness       2.958069
+99%         6201           7500       Kurtosis       14.86232
+
+. 
+. * Deflate wages, create log wage
+. qui generat wagereal = wage/(100*cpi)
+
+. qui generat lnwage   = ln(wagereal)
+
+. qui replace lnwage = occ if lnwage>=. & occ>=.
+
+. 
+. * Work experience
+. gen empFT    = inrange(wksWorkLastYr,40.01,.) & inrange(hours,34.01,.)
+
+. gen empPT    = (inrange(wksWorkLastYr,0,40) & inrange(hours,0,.)) | (inrange(
+> hours,0,34) & inrange(wksWorkLastYr,0,.))
+
+. bys id (wave): generat exper = sum(L.empFT)+.5*sum(L.empPT)
+
+. 
+. replace empFT = . if !mi(reason_noninterview)
+(73509 real changes made, 73509 to missing)
+
+. replace empPT = . if !mi(reason_noninterview)
+(73509 real changes made, 73509 to missing)
+
+. 
+. * Vote behavior
+. generat voter = inlist(vote,3,4)
+
+. replace voter = vote if mi(vote)
+(423652 real changes made, 423652 to missing)
+
+. 
+. lab var lnwage   "Log hourly wage, in 1982-84 $"
+
+. lab var exper    "Work experience (cum. # years 40+ weeks worked)"
+
+. lab var hours    "Usual hours per week at main job"
+
+. lab var occ      "Occupation of main job"
+
+. lab var ind      "Industry of main job"
+
+. lab var class    "Class of main job"
+
+. lab var selfemp  "Dummy for whether main job is self-employed"
+
+. 
+. ** Variables to keep:
+. global keeperwork lnwage exper hours empPT empFT occ ind class hours* occ* wa
+> ge* intWeekWorking* selfemp numIntWeekJobs wksWorkLastYr voter
+
+. 
+end of do-file
+
+. 
+. * Variables to keep:
+. keep ${keeperdemog} ${keeperschool} ${keeperwork}
+
+. 
+. xtsum id if year>=1979
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |    6343.5   3662.139          1      12686 |     N =  317150
+         between |             3662.277          1      12686 |     n =   12686
+         within  |                    0     6343.5     6343.5 |     T =      25
+
+. drop if missInt
+(73509 observations deleted)
+
+. xtsum id if year>=1979 & !missInt
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5773.055   3493.034          1      12686 |     N =  243641
+         between |             3662.277          1      12686 |     n =   12686
+         within  |                    0   5773.055   5773.055 | T-bar = 19.2055
+
+. * drop the two oversamples that other papers typically ignore
+. drop if oversamplePoor | oversampleMilitary
+(55376 observations deleted)
+
+. 
+. xtsum id if year>=1979
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5192.963   3255.092          1      12686 |     N =  214572
+         between |             3266.123          1      12686 |     n =    9763
+         within  |                    0   5192.963   5192.963 | T-bar = 21.9781
+
+. xtsum id if year>=1979 & female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5173.999   3240.692          1      12558 |     N =  110196
+         between |             3254.006          1      12558 |     n =    4926
+         within  |                    0   5173.999   5173.999 | T-bar = 22.3703
+
+. xtsum id if year>=1979 & !female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5212.985   3270.122          5      12686 |     N =  104376
+         between |             3278.601          5      12686 |     n =    4837
+         within  |                    0   5212.985   5212.985 | T-bar = 21.5787
+
+. 
+. drop if mi(athlete)
+(9187 observations deleted)
+
+. 
+. xtsum id if year>=1979 & !mi(athlete)
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5197.304   3252.367          2      12686 |     N =  209624
+         between |             3259.562          2      12686 |     n =    9292
+         within  |                    0   5197.304   5197.304 | T-bar = 22.5596
+
+. xtsum id if year>=1979 & !mi(athlete) & female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5177.644   3236.607          2      12558 |     N =  107959
+         between |             3244.085          2      12558 |     n =    4717
+         within  |                    0   5177.644   5177.644 | T-bar = 22.8872
+
+. xtsum id if year>=1979 & !mi(athlete) & !female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5218.181   3268.906          5      12686 |     N =  101665
+         between |             3275.602          5      12686 |     n =    4575
+         within  |                    0   5218.181   5218.181 | T-bar = 22.2219
+
+. 
+. drop if mi(hgc)
+(83887 observations deleted)
+
+. 
+. xtsum id if year>=1979 & !mi(hgc) & !mi(athlete)
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5196.533    3252.62          2      12686 |     N =  209365
+         between |             3259.562          2      12686 |     n =    9292
+         within  |                    0   5196.533   5196.533 | T-bar = 22.5317
+
+. xtsum id if year>=1979 & !mi(hgc) & !mi(athlete) & female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5177.351   3237.177          2      12558 |     N =  107840
+         between |             3244.085          2      12558 |     n =    4717
+         within  |                    0   5177.351   5177.351 | T-bar =  22.862
+
+. xtsum id if year>=1979 & !mi(hgc) & !mi(athlete) & !female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5216.908   3268.837          5      12686 |     N =  101525
+         between |             3275.602          5      12686 |     n =    4575
+         within  |                    0   5216.908   5216.908 | T-bar = 22.1913
+
+. 
+. xtsum id if year>=1979 & !mi(hgc) & !mi(athlete) & age==25
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |   5192.94   3250.869          2      12686 |     N =    8830
+         between |             3250.869          2      12686 |     n =    8830
+         within  |                    0    5192.94    5192.94 |     T =       1
+
+. xtsum id if year>=1979 & !mi(hgc) & !mi(athlete) & age==25 & female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5182.935   3239.537          2      12558 |     N =    4534
+         between |             3239.537          2      12558 |     n =    4534
+         within  |                    0   5182.935   5182.935 |     T =       1
+
+. xtsum id if year>=1979 & !mi(hgc) & !mi(athlete) & age==25 & !female
+
+Variable         |      Mean   Std. Dev.       Min        Max |    Observations
+-----------------+--------------------------------------------+----------------
+id       overall |  5203.498   3263.131          6      12686 |     N =    4296
+         between |             3263.131          6      12686 |     n =    4296
+         within  |                    0   5203.498   5203.498 |     T =       1
+
+. 
+. compress
+  height was int now byte
+  wage25 was float now int
+  wage26 was float now int
+  wave was float now byte
+  age was float now byte
+  birthq was float now byte
+  birthmo was float now byte
+  birthyr was float now int
+  m_hgcMoth was float now byte
+  m_hgcFath was float now byte
+  m_afqt was float now byte
+  m_asvabAR was float now byte
+  m_asvabCS was float now byte
+  m_asvabMK was float now byte
+  m_asvabNO was float now byte
+  m_asvabPC was float now byte
+  m_asvabWK was float now byte
+  overweight was float now byte
+  obese was float now byte
+  ovrwgtObese was float now byte
+  foreignBorn was float now byte
+  black was float now byte
+  hispanic was float now byte
+  white was float now byte
+  asian was float now byte
+  race was float now byte
+  female was float now byte
+  born1957 was float now byte
+  born1958 was float now byte
+  born1959 was float now byte
+  born1960 was float now byte
+  born1961 was float now byte
+  born1962 was float now byte
+  born1963 was float now byte
+  born1964 was float now byte
+  liveWithMom14 was float now byte
+  femaleHeadHH14 was float now byte
+  oversampleRace was float now byte
+  oversamplePoor was float now byte
+  oversampleMilitary was float now byte
+  m_famInc1978 was float now byte
+  missInt was float now byte
+  everMissInt was float now byte
+  ageAtMissInt was float now byte
+  yearMissInt was float now byte
+  missIntCum was float now byte
+  missIntLength was float now byte
+  missIntLastSpell was float now byte
+  missIntEnd was float now byte
+  missIntEndLength was float now byte
+  missIntFirstYear was float now byte
+  missIntLongestSpellYet was float now byte
+  missIntInvalidPeriod was float now byte
+  lastValidInt was float now byte
+  lastValidIntDate was float now int
+  ever_miss_1_int was float now byte
+  ever_miss_2_int was float now byte
+  ever_miss_3_int was float now byte
+  ever_miss_4_int was float now byte
+  ever_miss_5_int was float now byte
+  ever_miss_6_int was float now byte
+  ever_miss_7_int was float now byte
+  ever_miss_8_int was float now byte
+  ever_miss_9_int was float now byte
+  ever_miss_10_int was float now byte
+  ever_miss_11_int was float now byte
+  everMiss3plusInt was float now byte
+  ever_return_after_1_miss_int was float now byte
+  ever_return_after_2_miss_int was float now byte
+  ever_return_after_3_miss_int was float now byte
+  ever_return_after_4_miss_int was float now byte
+  ever_return_after_5_miss_int was float now byte
+  ever_return_after_6_miss_int was float now byte
+  ever_return_after_7_miss_int was float now byte
+  ever_return_after_8_miss_int was float now byte
+  ever_return_after_9_miss_int was float now byte
+  ever_return_after_10_miss_int was float now byte
+  ever_return_after_11_miss_int was float now byte
+  everReturnAfter3plusMissInt was float now byte
+  hgc was float now byte
+  grad4yr was float now byte
+  ged was float now byte
+  gradHS was float now byte
+  commOrg was float now byte
+  hobbyClub was float now byte
+  studentCouncil was float now byte
+  yrbookPaper was float now byte
+  athlete was float now byte
+  strongAthlete was float now byte
+  performArts was float now byte
+  nhs was float now byte
+  otherClub was float now byte
+  no_clubs was float now byte
+  numIntWeekJobs was float now byte
+  wage was float now int
+  hours was float now int
+  occ was float now int
+  ind was float now int
+  class was float now byte
+  selfemp was float now byte
+  empFT was float now byte
+  empPT was float now byte
+  voter was float now byte
+  (62,600,135 bytes saved)
+
+. save master, replace
+file master.dta saved
+
+. log close
+      name:  <unnamed>
+       log:  /hpchome/econ/tmr17/HSsports/NLSY79data/create_master.log
+  log type:  text
+ closed on:   3 Oct 2017, 10:27:39
+-------------------------------------------------------------------------------

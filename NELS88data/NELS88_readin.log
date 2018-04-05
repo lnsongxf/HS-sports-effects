@@ -1,0 +1,379 @@
+----------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /hpchome/econ/tmr17/HSsports/NELS88data/NELS88_readin.log
+  log type:  text
+ opened on:  23 Feb 2018, 11:57:27
+
+. /* Increase memory size to allow for dataset */
+> 
+> set maxvar 10000;
+
+
+. /* Clear everything */
+> clear;
+
+. /* Uncompress Stata dataset */
+> ! unzip -f NELS_88_00_BYF4STU_v1_0.dta.zip;
+
+
+. /* Open Stata dataset */
+> use "NELS_88_00_BYF4STU_v1_0";
+
+. /* Compress Stata dataset */
+> ! zip -u NELS_88_00_BYF4STU_v1_0.dta.zip NELS_88_00_BYF4STU_v1_0;
+
+
+. /* Keep only selected variables */
+> keep
+>     F4UNIV1
+>     F4UNI2A
+>     F4UNI2B
+>     F4UNI2C
+>     F4UNI2D
+>     F4UNI2E
+>     BIRTHYR
+>     RACE
+>     SEX
+>     BYS8A
+>     BYS8C
+>     BYS12
+>     BYS34A
+>     BYS34B
+>     BYSCENRL
+>     G8MINOR
+>     BYGRADS
+>     BY2XRIRR
+>     BY2XMIRR
+>     F1S41AA
+>     F1S41AB
+>     F1S41AC
+>     F1S41AD
+>     F1S41AE
+>     F1S41AF
+>     F1S41AG
+>     F1S41AH
+>     F1S41AI
+>     F1S41BA
+>     F1S41BB
+>     F1S41BC
+>     F1S41BD
+>     F1S41BE
+>     F1S41BF
+>     F1S41BG
+>     F1S41BH
+>     F1S41BI
+>     F1S81
+>     F1S82
+>     F1S84
+>     F1S85
+>     F1S90A
+>     F1S90B
+>     F1S92A
+>     F1S92D
+>     F1STAT
+>     F1DOSTAT
+>     F1SEX
+>     F1RACE
+>     F1SES
+>     G10CTRL1
+>     G10URBAN
+>     G10REGON
+>     F1SCENRL
+>     G10ENROL
+>     F1SCH_ID
+>     F2S5AMO
+>     F2S5ADA
+>     F2S6A
+>     F2S30AA
+>     F2S30AB
+>     F2S30AC
+>     F2S30BA
+>     F2S30BB
+>     F2S30BC
+>     F2S30BD
+>     F2S30BE
+>     F2S30BF
+>     F2S30BG
+>     F2S86A
+>     F2S88
+>     F2F1SCFL
+>     BYSC13C
+>     BYSC13D
+>     BYRATIO
+>     F1C10
+>     F1C27F
+>     F1C30A
+>     F1C30I
+>     F1C71B
+>     F1C71C
+>     F1C71E
+>     F1C71N
+>     F1C71O
+>     F1C71P
+>     F1C71R
+>     F1C71S
+>     F1C71V
+>     F1C76
+>     F1C77
+>     F2C49
+>     BYP3A
+>     BYP4
+>     BYP80
+>     BYT1_2
+>     BYT1_4
+>     BYT1_10
+>     BYT1_12
+>     F4AACTF
+>     F4AACTH
+>     F4AEMPL
+>     F4AAFTN
+>     F4AAFNW
+>     F4BEVEM
+>     F4BWFOR
+>     F4BXOCCD
+>     F4BXINCD
+>     F4BWKSWK
+>     F4GMRS
+>     F4GNMRG
+>     F4GNCH
+>     F4GCH1
+>     G10COHRT
+>     F4SGPAR
+>     F4HSDIPL
+>     F4TYPEDG
+>     F4ATT4YR
+>     F4ATTPSE
+>     F4ENRL00
+>     STU_ID
+>     F4QWT
+>     F4BYPNWT
+>     F4PNLWT
+>     F4F1PNWT
+>     F4F2PNWT
+>     F4CXTWT
+>     F4PAQWT
+>     F4TRSCWT
+>     F4QWT92G
+>     F4EDGR1
+>     F4EDGR2
+>     F4EDGR3
+>     F4EDGR4
+>     F4EDGR5
+>     F4EDGR6
+>     F4EMJ1
+>     F4EMJ2
+>     F4EMJ3
+>     F4EMJ4
+>     F4EMJ5
+>     F4EMJ6
+>     F4ED1
+>     F4ED2
+>     F4ED3
+>     F4ED4
+>     F4ED5
+>     F4ED6
+>     FIRSTSXM
+>     FIRSTSXY
+>     ARRESTED
+>     F4HI99
+>     F4HHOSE
+>     F4IFITNS
+>     F4IRVOTE
+>     F4ISMOKE
+>     F4IBINGE
+>     NATELEC
+>     VOTEPRES
+>     F3VOTED
+>     F4IVPRE
+>    ;
+
+. /* Compress the data to save space */
+> compress;
+  (0 bytes saved)
+
+. /* Save dataset */
+> save "NELS88_short4.dta", replace;
+file NELS88_short4.dta saved
+
+. describe;
+
+Contains data from NELS88_short4.dta
+  obs:        12,144                          
+ vars:           160                          23 Feb 2018 11:57
+ size:     2,963,136                          
+----------------------------------------------------------------------------------------------------------------------------
+              storage   display    value
+variable name   type    format     label      variable label
+----------------------------------------------------------------------------------------------------------------------------
+STU_ID          long    %12.0g                Student ID
+F4UNIV1         int     %8.0g                 Sample member status in all five waves
+F4UNI2A         byte    %8.0g                 How sample member entered study
+F4UNI2B         byte    %8.0g                 Base year status of sample member
+F4UNI2C         byte    %8.0g                 First follow-up status of sample member
+F4UNI2D         byte    %8.0g                 Second follow-up status of sample member
+F4UNI2E         byte    %8.0g                 Third follow-up status of sample member
+BYS8A           byte    %8.0g                 R LIVES IN HOUSEHOLD WITH FATHER
+BYS8C           byte    %8.0g                 R LIVES IN HOUSEHOLD WITH MOTHER
+BYS12           byte    %8.0g                 SEX OF RESPONDENT
+BYS34A          byte    %8.0g                 FATHER^S HIGHEST LEVEL OF EDUCATION
+BYS34B          byte    %8.0g                 MOTHER^S HIGHEST LEVEL OF EDUCATION
+BYSCENRL        byte    %8.0g                 TOTAL SCHOOL ENROLLMENT COMPOSITE
+G8MINOR         int     %8.0g                 PERCENT MINORITY IN SCHOOL
+SEX             byte    %8.0g                 COMPOSITE SEX
+RACE            byte    %8.0g                 COMPOSITE RACE
+BIRTHYR         byte    %8.0g                 YEAR OF BIRTH
+BYGRADS         float   %9.0g                 GRADES COMPOSITE
+BY2XRIRR        float   %9.0g                 READING IRT-ESTIMATED NUMBER RIGHT
+BY2XMIRR        float   %9.0g                 MATHEMATICS IRT-ESTIMATED NUMBER RIGHT
+F1S41AA         byte    %8.0g                 PLAYED BASEBALL/SOFTBALL AT SCHOOL
+F1S41AB         byte    %8.0g                 PLAYED BASKETBALL AT SCHOOL
+F1S41AC         byte    %8.0g                 PLAYED FOOTBALL AT SCHOOL
+F1S41AD         byte    %8.0g                 PLAYED SOCCER AT SCHOOL
+F1S41AE         byte    %8.0g                 PARTICIPATED ON SWIM TEAM AT SCHOOL
+F1S41AF         byte    %8.0g                 PLAYED OTHER TEAM SPORT
+F1S41AG         byte    %8.0g                 PLAYED AN INDIVIDUAL SPORT
+F1S41AH         byte    %8.0g                 PARTICIPATED IN CHEERLEADING
+F1S41AI         byte    %8.0g                 PARTICIPATED ON POM-POM, DRILL TEAM
+F1S41BA         byte    %8.0g                 PARTICIPATED IN SCHOOL BAND, ORCHESTRA
+F1S41BB         byte    %8.0g                 PARTICIPATED IN SCHOOL PLAY OR MUSICAL
+F1S41BC         byte    %8.0g                 PARTICIPATED IN STUDENT GOVERNMENT
+F1S41BD         byte    %8.0g                 PARTICIPATED IN ACADEMIC HONOR SOCIETY
+F1S41BE         byte    %8.0g                 PARTICIPATED IN SCHL YEARBOOK, NEWSPAPER
+F1S41BF         byte    %8.0g                 PARTICIPATED IN SCHOOL SERVICE CLUBS
+F1S41BG         byte    %8.0g                 PARTICIPATED IN SCHOOL ACADEMIC CLUBS
+F1S41BH         byte    %8.0g                 PARTICIPATED IN SCHOOL HOBBY CLUBS
+F1S41BI         byte    %8.0g                 PARTICIPATED IN SCHOOL FTA, FHA, FFA
+F1S81           byte    %8.0g                 WHAT IS R^S RELIGIOUS BACKGROUND
+F1S82           byte    %8.0g                 HOW OFTEN R ATTEND RELIGIOUS SERVICES
+F1S84           byte    %8.0g                 R CURRENTLY EMPLOYD OR EVER BEEN EMPLOYD
+F1S85           byte    %8.0g                 HOW MANY HRS DOES R USUALLY WORK A WEEK
+F1S90A          byte    %8.0g                 HOW MANY OLDER BROTHER(S) DOES R HAVE
+F1S90B          byte    %8.0g                 HOW MANY OLDER SISTER(S) DOES R HAVE
+F1S92A          byte    %8.0g                 FATHER LIVES IN SAME HOUSEHOLD AS R
+F1S92D          byte    %8.0g                 MOTHER LIVES IN SAME HOUSEHOLD AS R
+F1STAT          byte    %8.0g                 STATUS OF SAMPLE MEMBER
+F1DOSTAT        byte    %8.0g                 DROPOUT STATUS
+F1SEX           byte    %8.0g                 COMPOSITE SEX
+F1RACE          byte    %8.0g                 COMPOSITE RACE
+F1SES           float   %9.0g                 SOCIO-ECONOMIC STATUS COMPOSITE
+G10CTRL1        byte    %8.0g                 SCHOOL CLASSIFICATION REPORTED BY SCHOOL
+G10URBAN        byte    %8.0g                 TYPE OF SCHL DISTRICT, DIOCESE, COUNTY
+G10REGON        byte    %8.0g                 REGION OF THE COUNTRY (4 CENSUS REGIONS)
+F1SCENRL        byte    %8.0g                 ENTIRE SCHOOL ENROLLMENT
+G10ENROL        byte    %8.0g                 TENTH GRADE ENROLLMENT
+F1SCH_ID        long    %12.0g                F1 SCHOOL ID
+F2S5AMO         byte    %8.0g                 DATE COMPLETED (MONTH)
+F2S5ADA         byte    %8.0g                 DATE COMPLETED (DAY)
+F2S6A           byte    %8.0g                 CURRENT GRADE LEVEL
+F2S30AA         byte    %8.0g                 PARTICIPATED ON A TEAM SPORT AT SCHOOL
+F2S30AB         byte    %8.0g                 PARTICIPATED IN INDIVIDUAL SPORT AT SCHL
+F2S30AC         byte    %8.0g                 PARTICIPATED IN CHEERLEADING/POMPOM
+F2S30BA         byte    %8.0g                 PARTICIPATED IN SCHOOL MUSIC GROUP
+F2S30BB         byte    %8.0g                 PARTICIPATED IN SCHOOL PLAY OR MUSICAL
+F2S30BC         byte    %8.0g                 PARTICIPATED IN SCHOOL GOVERNMENT
+F2S30BD         byte    %8.0g                 PARTICIPATED IN ACADEMIC HONOR SOCIETY
+F2S30BE         byte    %8.0g                 PARTICIPATED IN SCHL YEARBOOK, NEWSPAPER
+F2S30BF         byte    %8.0g                 PARTICIPATED IN SCHOOL SERVICE CLUBS
+F2S30BG         byte    %8.0g                 PARTICIPATED IN SCHOOL ACADEMIC CLUBS
+F2S86A          byte    %8.0g                 HAS R EVER WORKED FOR PAY OUTSIDE HOME
+F2S88           byte    %8.0g                 CURRENT JOB, # HRS WORKED DURING SCHL YR
+F2F1SCFL        byte    %8.0g                 STUDENT ATTENDED SAME SCHOOL IN 1990/92
+BYSC13C         int     %8.0g                 % OF HISPANIC 8TH GRADERS
+BYSC13D         int     %8.0g                 % OF BLACK NON-HISPANIC 8TH GRADERS
+BYRATIO         byte    %8.0g                 COMPOSITE STUDENT-TEACHER RATIO
+F1C10           byte    %8.0g                 IS R^S SCHOOL COEDUCATIONAL?
+F1C27F          int     %8.0g                 % OF WHITE (NON HISPANIC) 10TH GRADERS
+F1C30A          int     %8.0g                 % STUDNTS RECV FREE, REDUCED-PRICE LUNCH
+F1C30I          int     %8.0g                 % RECEIVES COLLGE BD. ADV PLACEMNT CRSES
+F1C71B          byte    %8.0g                 BAND/ORCHESTRA AVAILABLE IN 10TH GRADE
+F1C71C          byte    %8.0g                 CHORUS OR CHOIR AVAILABLE IN 10TH GRADE
+F1C71E          byte    %8.0g                 DRAMA CLUB(S) AVAILABLE IN 10TH GRADE
+F1C71N          byte    %8.0g                 STUDENT NEWSPAPER AVAILABLE IN 10TH GRD.
+F1C71O          byte    %8.0g                 STUDENT YEARBOOK AVAILABLE IN 10TH GRADE
+F1C71P          byte    %8.0g                 ORCHESTRA AVAILABLE TO 10TH GR. STUDNTS
+F1C71R          byte    %8.0g                 DEBATE/SPEECH TEAMS AVAILABLE IN 10TH GR
+F1C71S          byte    %8.0g                 INTERSCHOLASTIC SPORTS AVAILABLE 10TH GR
+F1C71V          byte    %8.0g                 CHEERLEADING AVAILABLE IN 10TH GRADE
+F1C76           byte    %8.0g                 # OF ADVANCED PLACEMENT COURSES OFFERED
+F1C77           int     %8.0g                 # OF 10TH GRADE STUDENTS IN AP COURSES
+F2C49           int     %8.0g                 # OF 12TH GRADE STUDENTS IN AP COURSES
+BYP3A           byte    %8.0g                 NUMBER OF SIBLINGS 8TH GRADER HAS
+BYP4            byte    %8.0g                 NO. OF CHILDRN OLDER THAN R^S 8TH GRADER
+BYP80           byte    %8.0g                 TOTAL FAMILY INCOME FRM ALL SOURCES 1987
+BYT1_2          byte    %8.0g                 STUDENT PERFORMS BELOW ABILITY
+BYT1_4          byte    %8.0g                 STUDENT IS FREQUENTLY ABSENT
+BYT1_10         byte    %8.0g                 STUDENT HAS HANDICAP AFFECTING SCHLWORK
+BYT1_12         byte    %8.0g                 STUDENT LIMITED ENGLISH PROFICIENCY
+NATELEC         byte    %8.0g                 Past 12 months vote local/state
+VOTEPRES        byte    %8.0g                 Vote in 1992 president election
+ARRESTED        byte    %8.0g                 Respondent or close friend arrested
+FIRSTSXM        byte    %8.0g                 Month of first sex
+FIRSTSXY        byte    %8.0g                 Year of first sex
+F3VOTED         byte    %8.0g                 Vote: Voted in past elections
+F4AACTF         byte    %8.0g                 Current activity-full-time job
+F4AACTH         byte    %8.0g                 Current activity-keeping house
+F4AEMPL         byte    %8.0g                 Employed for pay
+F4AAFTN         byte    %8.0g                 Ever served in armed forces
+F4AAFNW         byte    %8.0g                 Currently on active duty in armed forces
+F4BEVEM         byte    %8.0g                 Ever held job for pay
+F4BWFOR         byte    %8.0g                 Employer type working for
+F4BXOCCD        byte    %8.0g                 Current/previous occupation code
+F4BXINCD        byte    %8.0g                 Current/previous industry code
+F4BWKSWK        byte    %8.0g                 Weeks worked in 1999
+F4EDGR1         byte    %8.0g                 Degree/certificate earned-1
+F4ED1           long    %12.0g                Date degree awarded-1
+F4EMJ1D         int     %8.0g                 Major/field of study code-1
+F4EDGR2         byte    %8.0g                 Degree/certificate earned-2
+F4ED2           long    %12.0g                Date degree awarded-2
+F4EMJ2D         int     %8.0g                 Major/field of study code-2
+F4EDGR3         byte    %8.0g                 Degree/certificate earned-3
+F4ED3           long    %12.0g                Date degree awarded-3
+F4EMJ3D         int     %8.0g                 Major/field of study code-3
+F4EDGR4         byte    %8.0g                 Degree/certificate earned-4
+F4ED4           long    %12.0g                Date degree awarded-4
+F4EMJ4D         int     %8.0g                 Major/field of study code-4
+F4EDGR5         byte    %8.0g                 Degree/certificate earned-5
+F4ED5           long    %12.0g                Date degree awarded-5
+F4EMJ5D         int     %8.0g                 Major/field of study code-5
+F4EDGR6         byte    %8.0g                 Degree/certificate earned-6
+F4ED6           long    %12.0g                Date degree awarded-6
+F4EMJ6D         int     %8.0g                 Major/field of study code-6
+F4GMRS          byte    %8.0g                 Marital status in 2000
+F4GNMRG         byte    %8.0g                 Married more than once
+F4GNCH          byte    %8.0g                 Number of biological children
+F4GCH1          long    %12.0g                Date first child born
+F4HI99          long    %12.0g                Income of respondent in 1999
+F4HHOSE         byte    %8.0g                 Housing status
+F4IFITNS        byte    %8.0g                 Integration-physical fitness activities
+F4IRVOTE        byte    %8.0g                 Registered to vote
+F4IVPRE         byte    %8.0g                 Voted in 1996 presidential election
+F4ISMOKE        byte    %8.0g                 Use of cigarettes
+F4IBINGE        byte    %8.0g                 Five or more drinks in last two weeks
+G10COHRT        byte    %8.0g                 Member 10th grade school class, 1989-90
+F4QWT           float   %9.0g                 Questionnaire weight for F4
+F4BYPNWT        float   %9.0g                 Panel weight, BY, F4 (1988 and 2000)
+F4PNLWT         float   %9.0g                 Panel weight, BY, F1, F2, F3, and F4
+F4F1PNWT        float   %9.0g                 Panel weight, F1, F2, F3, and F4
+F4F2PNWT        float   %9.0g                 Panel weight, F2, F3, and F4
+F4CXTWT         float   %9.0g                 Teacher/Admin weight for F4 respondents
+F4PAQWT         float   %9.0g                 Parent weight for F4 respondents
+F4TRSCWT        float   %9.0g                 HS transcript weight for F4 respondents
+F4QWT92G        float   %9.0g                 F4QWT for 1992 HS diploma graduates
+F4SGPAR         byte    %8.0g                 Single-parent status at the interview
+F4HSDIPL        byte    %8.0g                 High school completion status as of 2000
+F4TYPEDG        byte    %8.0g                 Types of PSE degrees attained as of 2000
+F4ATT4YR        byte    %8.0g                 Ever attended a 4-year institution
+F4ATTPSE        byte    %8.0g                 Ever attended a PSE after HS
+F4ENRL00        byte    %8.0g                 Currently enrolled in a PSE institution
+----------------------------------------------------------------------------------------------------------------------------
+Sorted by:  
+
+. 
+end of do-file
+
+. do NELS88_regdata4
+
+. /*   This file will construct the analysis data for the NELS88 sample first stage     */
+. 
+. * cd "C:\Users\mrr2\Research Files\Sports&Occupation\NELS88\ "
+. capture log close

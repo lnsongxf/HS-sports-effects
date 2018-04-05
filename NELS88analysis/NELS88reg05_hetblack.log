@@ -1,0 +1,3050 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /hpchome/econ/tmr17/HSsports/NELS88analysis/NELS88reg05_hetblack.l
+> og
+  log type:  text
+ opened on:   3 Oct 2017, 07:38:31
+
+. 
+. /* Increase memory size to allow for dataset */
+. 
+. set maxvar 10000
+
+
+. 
+. /* Open Stata dataset */
+. use NELS88regdata4.dta
+
+. gen by72 = BIRTHYR==1972
+
+. gen race_other = race_native==1 | race_api==1
+
+. gen tot_irt = math_irt + read_irt
+
+. gen blackSport = race_black*sport
+
+. 
+. 
+. preserve
+
+.     ren sport athlete
+
+.     drop race_native race_api
+
+.     gen loginc = log(inc99)
+(1033 missing values generated)
+
+.     drop if female
+(4742 observations deleted)
+
+.     *===================================================
+.     * Summary statistics for descriptive stats tables
+.     *===================================================
+. 
+.     foreach var of varlist by* race_* hh_* ed_* inc_* frqabsent handicap enr?
+>  cont_* urban? college_grad post_second loginc workft fit_active binge_drink 
+> voter {
+  2.         gen `var'_100 = 100*`var'
+  3.     }
+(31 missing values generated)
+(363 missing values generated)
+(3 missing values generated)
+(14 missing values generated)
+
+. 
+.     qui clonevar tempirt = tot_irt
+
+.     qui clonevar temploginc   = loginc
+
+.     qui replace  temploginc   = . if mi(loginc)
+
+. 
+.     qui ds *_100
+
+.     local discretevars `r(varlist)'
+
+. 
+.     local contvars tempirt temploginc
+
+. 
+.     lab var race_white_100         "White"
+
+.     lab var race_black_100         "Black"
+
+.     lab var race_hisp_100          "Hispanic"
+
+.     lab var race_other_100         "Other"
+
+.     lab var ed_mother_100          "Mother: college degree or higher"
+
+.     lab var ed_father_100          "Father: college degree or higher"
+
+.     lab var hh_mother_100          "Coresidence with Mother"
+
+.     lab var hh_father_100          "Coresidence with Father"
+
+.     lab var inc_high_100           "Family income > 50k"
+
+.     lab var inc_low_100            "Family income < 20k"
+
+.     lab var by72_100               "Born in 1972"
+
+.     lab var by73_100               "Born in 1973"
+
+.     lab var by74_100               "Born in 1974"
+
+.     lab var by75_100               "Born in 1975"
+
+.     lab var frqabsent_100           "Frequently absent"
+
+.     lab var handicap_100           "Has handicap"
+
+.     lab var enr1_100               "School size decile 1"
+
+.     lab var enr2_100               "School size decile 2"
+
+.     lab var enr3_100               "School size decile 3"
+
+.     lab var enr4_100               "School size decile 4"
+
+.     lab var enr5_100               "School size decile 5"
+
+.     lab var enr6_100               "School size decile 6"
+
+.     lab var enr7_100               "School size decile 7"
+
+.     lab var enr8_100               "School size decile 8"
+
+.     lab var enr9_100               "School size decile 9"
+
+.     lab var cont_public_100        "Public school"
+
+.     lab var cont_catholic_100      "Catholic school"
+
+.     lab var cont_religious_100     "Non-Catholic religious school"
+
+.     lab var cont_private_100       "Non-religious private school"
+
+.     lab var urban1_100              "Urbanicity quintile 1"
+
+.     lab var urban2_100              "Urbanicity quintile 2"
+
+.     lab var urban3_100              "Urbanicity quintile 3"
+
+.     lab var urban4_100              "Urbanicity quintile 4"
+
+.     lab var urban5_100              "Urbanicity quintile 5"
+
+.     lab var post_second_100        "Attended college"
+
+.     lab var college_grad_100       "Graduated 4-year college"
+
+.     lab var workft_100             "Employed full-time"
+
+.     lab var binge_drink_100        "Alcohol abuse"
+
+.     lab var voter_100              "Voter"
+
+.     lab var fit_active_100         "Regular exercise"
+
+.     capture lab var tempirt        "Colmbined IRT score"
+
+.     capture lab var temploginc     "Log income"
+
+. 
+.     *-----------------------------------------
+.     * Create summary stats tables
+.     *-----------------------------------------
+.     qui ds tempirt race_white_100 race_black_100 race_hisp_100 race_other_100
+>  ed_mother_100 ed_father_100 inc_low_100 inc_high_100 hh_mother_100 hh_father
+> _100 by72_100 by73_100 by74_100 by75_100 frqabsent_100 handicap_100 enr1_100 
+> enr2_100 enr3_100 enr4_100 enr5_100 enr6_100 enr7_100 enr8_100 enr9_100 cont_
+> public_100 cont_catholic_100 cont_religious_100 cont_private_100 urban1_100 u
+> rban2_100 urban3_100 urban4_100 urban5_100 post_second_100 college_grad_100 t
+> emploginc workft_100 fit_active_100 binge_drink_100 voter_100
+
+.     local allvars `r(varlist)'
+
+. 
+.     qui gen holderOverall      = ""
+
+.     qui gen holderOverallPflag = 0
+
+.     qui gen holderAthlete0     = ""
+
+.     qui gen holderAthlete1     = ""
+
+.     qui gen holderName         = ""
+
+.     qui gen fmtInd             = 0
+
+.     local i = 1
+
+.     foreach var in `allvars' {
+  2.         local test = 0
+  3.         foreach var2 in `discretevars' {
+  4.             if "`var'"=="`var2'" {
+  5.                 local test = 1
+  6.                 continue, break
+  7.             }
+  8.         }
+  9.         if "`test'"=="1" {
+ 10.             di "`var'"
+ 11.             local varlab: variable label `var'
+ 12.             qui replace holderName = "`varlab'" if _n==`i'
+ 13.             qui replace fmtInd     = 1          if _n==`i'
+ 14.             qui sum `var' , d
+ 15.             local temp: di %3.2f `r(mean)'
+ 16.             qui replace holderOverall = "`temp'" if _n==`i'
+ 17.             qui ttest `var' , by(athlete)
+ 18.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 19.             foreach a in 0 1 {
+ 20.                 qui sum `var'  if athlete==`a', d
+ 21.                 local temp: di %3.2f `r(mean)'
+ 22.                 qui replace holderAthlete`a' = "`temp'" if _n==`i'
+ 23.             }
+ 24.             local i = `=`i'+1'
+ 25.         }
+ 26.         else {
+ 27.             di "`var'"
+ 28.             local varlab: variable label `var'
+ 29.             qui replace holderName = "`varlab'" if _n==`i'
+ 30.             qui replace fmtInd     = 1          if _n==`i'
+ 31.             qui sum `var' , d
+ 32.             local temp1: di %3.2f `r(mean)'
+ 33.             local temp2: di %3.2f `r(sd)'
+ 34.             qui replace holderOverall = "`temp1'"   if _n==`i'
+ 35.             qui replace holderOverall = "(`temp2')" if _n==`=`i'+1'
+ 36.             qui ttest `var' , by(athlete)
+ 37.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 38.             foreach a in 0 1 {
+ 39.                 qui sum `var' if athlete==`a', d
+ 40.                 local temp1: di %3.2f `r(mean)'
+ 41.                 local temp2: di %3.2f `r(sd)'
+ 42.                 qui replace holderAthlete`a' = "`temp1'"   if _n==`i'
+ 43.                 qui replace holderAthlete`a' = "(`temp2')" if _n==`=`i'+1'
+ 44.             }
+ 45.             local i = `=`i'+2'
+ 46.         }
+ 47.         * Sample Sizes
+.         qui replace holderName = "N" if _n==`i'
+ 48.         qui count 
+ 49.         local tempN: di %9.0fc `r(N)'
+ 50.         qui replace holderOverall = "`tempN'" if _n==`i'
+ 51.         foreach a in 0 1 {
+ 52.             qui count if athlete==`a'
+ 53.             local tempN: di %9.0fc `r(N)'
+ 54.             qui replace holderAthlete`a' = "`tempN'" if _n==`i'
+ 55.         }
+ 56.     }
+tempirt
+race_white_100
+race_black_100
+race_hisp_100
+race_other_100
+ed_mother_100
+ed_father_100
+inc_low_100
+inc_high_100
+hh_mother_100
+hh_father_100
+by72_100
+by73_100
+by74_100
+by75_100
+frqabsent_100
+handicap_100
+enr1_100
+enr2_100
+enr3_100
+enr4_100
+enr5_100
+enr6_100
+enr7_100
+enr8_100
+enr9_100
+cont_public_100
+cont_catholic_100
+cont_religious_100
+cont_private_100
+urban1_100
+urban2_100
+urban3_100
+urban4_100
+urban5_100
+post_second_100
+college_grad_100
+temploginc
+workft_100
+fit_active_100
+binge_drink_100
+voter_100
+
+. 
+.     * Add asterisk if athletes are significantly different from non-athletes
+.     replace holderAthlete1 = "$"+holderAthlete1+"^{\ast}$" if holderOverallPf
+> lag==1
+holderAthlete1 was str9 now str14
+(23 real changes made)
+
+. 
+.     qui listtex holderName holderAthlete0 holderAthlete1 holderOverall in 1/`
+> =`i'' using sumStatsTableSport.tex, replace delimiter(" & ") end ("   \tabula
+> rnewline")
+
+. 
+.     drop *_100
+
+. restore
+
+. 
+. preserve
+
+.     ren sport athlete
+
+.     drop race_native race_api
+
+.     gen loginc = log(inc99)
+(1033 missing values generated)
+
+.     drop if !female
+(4227 observations deleted)
+
+.     *===================================================
+.     * Summary statistics for descriptive stats tables
+.     *===================================================
+. 
+.     foreach var of varlist by* race_* hh_* ed_* inc_* frqabsent handicap enr?
+>  cont_* urban? college_grad post_second loginc workft fit_active binge_drink 
+> voter {
+  2.         gen `var'_100 = 100*`var'
+  3.     }
+(37 missing values generated)
+(670 missing values generated)
+(1 missing value generated)
+(2 missing values generated)
+(11 missing values generated)
+
+. 
+.     qui clonevar tempirt = tot_irt
+
+.     qui clonevar temploginc   = loginc
+
+.     qui replace  temploginc   = . if mi(loginc)
+
+. 
+.     qui ds *_100
+
+.     local discretevars `r(varlist)'
+
+. 
+.     local contvars tempirt temploginc
+
+. 
+.     lab var race_white_100         "White"
+
+.     lab var race_black_100         "Black"
+
+.     lab var race_hisp_100          "Hispanic"
+
+.     lab var race_other_100         "Other"
+
+.     lab var ed_mother_100          "Mother: college degree or higher"
+
+.     lab var ed_father_100          "Father: college degree or higher"
+
+.     lab var hh_mother_100          "Coresidence with Mother"
+
+.     lab var hh_father_100          "Coresidence with Father"
+
+.     lab var inc_high_100           "Family income > 50k"
+
+.     lab var inc_low_100            "Family income < 20k"
+
+.     lab var by72_100               "Born in 1972"
+
+.     lab var by73_100               "Born in 1973"
+
+.     lab var by74_100               "Born in 1974"
+
+.     lab var by75_100               "Born in 1975"
+
+.     lab var frqabsent_100           "Frequently absent"
+
+.     lab var handicap_100           "Has handicap"
+
+.     lab var enr1_100               "School size decile 1"
+
+.     lab var enr2_100               "School size decile 2"
+
+.     lab var enr3_100               "School size decile 3"
+
+.     lab var enr4_100               "School size decile 4"
+
+.     lab var enr5_100               "School size decile 5"
+
+.     lab var enr6_100               "School size decile 6"
+
+.     lab var enr7_100               "School size decile 7"
+
+.     lab var enr8_100               "School size decile 8"
+
+.     lab var enr9_100               "School size decile 9"
+
+.     lab var cont_public_100        "Public school"
+
+.     lab var cont_catholic_100      "Catholic school"
+
+.     lab var cont_religious_100     "Non-Catholic religious school"
+
+.     lab var cont_private_100       "Non-religious private school"
+
+.     lab var urban1_100              "Urbanicity quintile 1"
+
+.     lab var urban2_100              "Urbanicity quintile 2"
+
+.     lab var urban3_100              "Urbanicity quintile 3"
+
+.     lab var urban4_100              "Urbanicity quintile 4"
+
+.     lab var urban5_100              "Urbanicity quintile 5"
+
+.     lab var post_second_100        "Attended college"
+
+.     lab var college_grad_100       "Graduated 4-year college"
+
+.     lab var workft_100             "Employed full-time"
+
+.     lab var binge_drink_100        "Alcohol abuse"
+
+.     lab var voter_100              "Voter"
+
+.     lab var fit_active_100         "Regular exercise"
+
+.     capture lab var tempirt        "Colmbined IRT score"
+
+.     capture lab var temploginc     "Log income"
+
+. 
+.     *-----------------------------------------
+.     * Create summary stats tables
+.     *-----------------------------------------
+.     qui ds tempirt race_white_100 race_black_100 race_hisp_100 race_other_100
+>  ed_mother_100 ed_father_100 inc_low_100 inc_high_100 hh_mother_100 hh_father
+> _100 by72_100 by73_100 by74_100 by75_100 frqabsent_100 handicap_100 enr1_100 
+> enr2_100 enr3_100 enr4_100 enr5_100 enr6_100 enr7_100 enr8_100 enr9_100 cont_
+> public_100 cont_catholic_100 cont_religious_100 cont_private_100 urban1_100 u
+> rban2_100 urban3_100 urban4_100 urban5_100 post_second_100 college_grad_100 t
+> emploginc workft_100 fit_active_100 binge_drink_100 voter_100
+
+.     local allvars `r(varlist)'
+
+. 
+.     qui gen holderOverall      = ""
+
+.     qui gen holderOverallPflag = 0
+
+.     qui gen holderAthlete0     = ""
+
+.     qui gen holderAthlete1     = ""
+
+.     qui gen holderName         = ""
+
+.     qui gen fmtInd             = 0
+
+.     local i = 1
+
+.     foreach var in `allvars' {
+  2.         local test = 0
+  3.         foreach var2 in `discretevars' {
+  4.             if "`var'"=="`var2'" {
+  5.                 local test = 1
+  6.                 continue, break
+  7.             }
+  8.         }
+  9.         if "`test'"=="1" {
+ 10.             di "`var'"
+ 11.             local varlab: variable label `var'
+ 12.             qui replace holderName = "`varlab'" if _n==`i'
+ 13.             qui replace fmtInd     = 1          if _n==`i'
+ 14.             qui sum `var' , d
+ 15.             local temp: di %3.2f `r(mean)'
+ 16.             qui replace holderOverall = "`temp'" if _n==`i'
+ 17.             qui ttest `var' , by(athlete)
+ 18.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 19.             foreach a in 0 1 {
+ 20.                 qui sum `var' if athlete==`a', d
+ 21.                 local temp: di %3.2f `r(mean)'
+ 22.                 qui replace holderAthlete`a' = "`temp'" if _n==`i'
+ 23.             }
+ 24.             local i = `=`i'+1'
+ 25.         }
+ 26.         else {
+ 27.             di "`var'"
+ 28.             local varlab: variable label `var'
+ 29.             qui replace holderName = "`varlab'" if _n==`i'
+ 30.             qui replace fmtInd     = 1          if _n==`i'
+ 31.             qui sum `var' , d
+ 32.             local temp1: di %3.2f `r(mean)'
+ 33.             local temp2: di %3.2f `r(sd)'
+ 34.             qui replace holderOverall = "`temp1'"   if _n==`i'
+ 35.             qui replace holderOverall = "(`temp2')" if _n==`=`i'+1'
+ 36.             qui ttest `var' , by(athlete)
+ 37.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 38.             foreach a in 0 1 {
+ 39.                 qui sum `var' if athlete==`a', d
+ 40.                 local temp1: di %3.2f `r(mean)'
+ 41.                 local temp2: di %3.2f `r(sd)'
+ 42.                 qui replace holderAthlete`a' = "`temp1'"   if _n==`i'
+ 43.                 qui replace holderAthlete`a' = "(`temp2')" if _n==`=`i'+1'
+ 44.             }
+ 45.             local i = `=`i'+2'
+ 46.         }
+ 47.         * Sample Sizes
+.         qui replace holderName = "N" if _n==`i'
+ 48.         qui count 
+ 49.         local tempN: di %9.0fc `r(N)'
+ 50.         qui replace holderOverall = "`tempN'" if _n==`i'
+ 51.         foreach a in 0 1 {
+ 52.             qui count if athlete==`a'
+ 53.             local tempN: di %9.0fc `r(N)'
+ 54.             qui replace holderAthlete`a' = "`tempN'" if _n==`i'
+ 55.         }
+ 56.     }
+tempirt
+race_white_100
+race_black_100
+race_hisp_100
+race_other_100
+ed_mother_100
+ed_father_100
+inc_low_100
+inc_high_100
+hh_mother_100
+hh_father_100
+by72_100
+by73_100
+by74_100
+by75_100
+frqabsent_100
+handicap_100
+enr1_100
+enr2_100
+enr3_100
+enr4_100
+enr5_100
+enr6_100
+enr7_100
+enr8_100
+enr9_100
+cont_public_100
+cont_catholic_100
+cont_religious_100
+cont_private_100
+urban1_100
+urban2_100
+urban3_100
+urban4_100
+urban5_100
+post_second_100
+college_grad_100
+temploginc
+workft_100
+fit_active_100
+binge_drink_100
+voter_100
+
+. 
+.     * Add asterisk if athletes are significantly different from non-athletes
+.     replace holderAthlete1 = "$"+holderAthlete1+"^{\ast}$" if holderOverallPf
+> lag==1
+holderAthlete1 was str9 now str14
+(29 real changes made)
+
+. 
+.     qui listtex holderName holderAthlete0 holderAthlete1 holderOverall in 1/`
+> =`i'' using sumStatsTableSportFemale.tex, replace delimiter(" & ") end ("   \
+> tabularnewline")
+
+. 
+.     drop *_100
+
+. restore
+
+. 
+. 
+. 
+. 
+. xtset F1SCH_ID
+       panel variable:  F1SCH_ID (unbalanced)
+
+. 
+. /*  Higher Ed Analysis  */
+. 
+. reg college_grad sport if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4705
+                                                       F(  1,  1100) =  162.26
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0347
+                                                       Root MSE      =  .48631
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1843148   .0144693    12.74   0.000     .1559242    .2127054
+       _cons |    .337126   .0110523    30.50   0.000       .31544     .358812
+------------------------------------------------------------------------------
+
+. 
+. reg college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fe
+> male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4705
+                                                       F( 33,  1100) =  114.90
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.3206
+                                                       Root MSE      =  .40938
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0901649   .0129212     6.98   0.000     .0648118    .1155179
+  blackSport |  -.0452438     .04283    -1.06   0.291    -.1292815     .038794
+        by73 |   .0259992   .0374622     0.69   0.488    -.0475062    .0995046
+        by74 |   .0703783    .037503     1.88   0.061    -.0032071    .1439637
+        by75 |   .0733432   .0611591     1.20   0.231    -.0466584    .1933448
+ race_native |  -.0924833   .0506091    -1.83   0.068    -.1917846    .0068179
+  race_black |   .0992839   .0285209     3.48   0.001     .0433225    .1552454
+   race_hisp |  -.0505102   .0204285    -2.47   0.014    -.0905934    -.010427
+    race_api |   .0958511   .0255368     3.75   0.000     .0457448    .1459573
+   hh_father |   .0880152   .0147477     5.97   0.000     .0590783    .1169521
+   hh_mother |   .0858646   .0287615     2.99   0.003      .029431    .1422983
+   ed_mother |   .0760426   .0183552     4.14   0.000     .0400274    .1120577
+   ed_father |   .1252955   .0178287     7.03   0.000     .0903135    .1602775
+     inc_low |   .0066907   .0160533     0.42   0.677    -.0248078    .0381893
+    inc_high |   .0824158   .0163221     5.05   0.000     .0503897    .1144419
+    math_irt |   .0091785   .0007885    11.64   0.000     .0076314    .0107257
+    read_irt |   .0098662   .0010507     9.39   0.000     .0078046    .0119278
+   frqabsent |  -.1108215    .023637    -4.69   0.000    -.1572001   -.0644429
+    handicap |   .0296524   .0459338     0.65   0.519    -.0604754    .1197802
+        enr2 |   .0284219   .0251736     1.13   0.259    -.0209718    .0778155
+        enr3 |   .0509055   .0239899     2.12   0.034     .0038343    .0979766
+        enr4 |   .0175238   .0264189     0.66   0.507    -.0343134     .069361
+        enr5 |   .0621694   .0246534     2.52   0.012     .0137965    .1105423
+        enr6 |   .0498831    .025416     1.96   0.050     .0000138    .0997523
+        enr7 |   .0607096   .0300173     2.02   0.043      .001812    .1196071
+        enr8 |   .0641056   .0335757     1.91   0.056     -.001774    .1299852
+        enr9 |   .1172177   .0322769     3.63   0.000     .0538866    .1805489
+cont_catho~c |   .1246183   .0303008     4.11   0.000     .0651644    .1840721
+cont_relig~s |   .1085016   .0392422     2.76   0.006     .0315036    .1854997
+cont_private |   .1152168   .0392224     2.94   0.003     .0382576     .192176
+      urban2 |   .0199052   .0174648     1.14   0.255    -.0143629    .0541734
+      urban3 |   .0051087   .0218387     0.23   0.815    -.0377416    .0479589
+      urban4 |   .0961845   .0385235     2.50   0.013     .0205967    .1717723
+       _cons |  -.6084102   .0549096   -11.08   0.000    -.7161496   -.5006708
+------------------------------------------------------------------------------
+
+. 
+. rcr college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fe
+> male, clust(F1SCH_ID) lambda(-1 0)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4705
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.306969   .0841536    27.41   0.000     2.142031    2.471907
+    betaxInf |   .6853906   .0560278    12.23   0.000     .5755782    .7952031
+     lambda0 |   .4732155   .0823442     5.75   0.000     .3118238    .6346072
+      betaxL |   .0901649   .0128758     7.00   0.000     .0649287    .1154011
+      betaxH |   .2277915   .0178666    12.75   0.000     .1927736    .2628094
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0649287    .2628094
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fe
+> male, clust(F1SCH_ID) lambda(0 .5)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4705
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.306969   .0841536    27.41   0.000     2.142031    2.471907
+    betaxInf |   .6853906   .0560278    12.23   0.000     .5755782    .7952031
+     lambda0 |   .4732155   .0823442     5.75   0.000     .3118238    .6346072
+      betaxL |  -.0057745   .0180751    -0.32   0.749    -.0412011     .029652
+      betaxH |   .0901649   .0128758     7.00   0.000     .0649287    .1154011
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0412011    .1154011
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fe
+> male, clust(F1SCH_ID)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4705
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.306969   .0841536    27.41   0.000     2.142031    2.471907
+    betaxInf |   .6853906   .0560278    12.23   0.000     .5755782    .7952031
+     lambda0 |   .4732155   .0823442     5.75   0.000     .3118238    .6346072
+      betaxL |  -.1317314    .030124    -4.37   0.000    -.1907733   -.0726895
+      betaxH |   .0901649   .0128758     7.00   0.000     .0649287    .1154011
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1907733    .1154011
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. reg college_grad sport if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4196
+                                                       F(  1,  1080) =  102.18
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0220
+                                                       Root MSE      =  .47928
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1576754   .0155984    10.11   0.000     .1270688     .188282
+       _cons |   .2652068   .0135947    19.51   0.000     .2385318    .2918818
+------------------------------------------------------------------------------
+
+. 
+. reg college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if ma
+> le, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4196
+                                                       F( 33,  1080) =   85.70
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.3159
+                                                       Root MSE      =  .40237
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0963547   .0138099     6.98   0.000     .0692574     .123452
+  blackSport |  -.0223353   .0472792    -0.47   0.637    -.1151047    .0704341
+        by73 |  -.0059136   .0287892    -0.21   0.837    -.0624026    .0505755
+        by74 |   .0252573    .028586     0.88   0.377     -.030833    .0813477
+        by75 |   .1263155   .0643952     1.96   0.050    -.0000385    .2526694
+ race_native |   -.139847   .0381698    -3.66   0.000    -.2147423   -.0649517
+  race_black |   .0367771   .0398929     0.92   0.357    -.0414993    .1150535
+   race_hisp |  -.0320812   .0201328    -1.59   0.111    -.0715851    .0074226
+    race_api |   .0790709   .0291878     2.71   0.007     .0217997    .1363421
+   hh_father |   .0640122   .0161803     3.96   0.000     .0322637    .0957606
+   hh_mother |   .0796199   .0238152     3.34   0.001     .0328907    .1263492
+   ed_mother |   .0639358   .0200976     3.18   0.002     .0245011    .1033705
+   ed_father |   .1465474   .0197761     7.41   0.000     .1077434    .1853514
+     inc_low |  -.0359646   .0160411    -2.24   0.025    -.0674398   -.0044893
+    inc_high |   .0952215   .0170093     5.60   0.000     .0618464    .1285965
+    math_irt |    .009983   .0008184    12.20   0.000     .0083771    .0115888
+    read_irt |   .0042671   .0010702     3.99   0.000     .0021672     .006367
+   frqabsent |  -.1018392   .0255624    -3.98   0.000    -.1519968   -.0516816
+    handicap |  -.0639789   .0405311    -1.58   0.115    -.1435075    .0155497
+        enr2 |  -.0015226   .0247447    -0.06   0.951    -.0500757    .0470305
+        enr3 |   .0342308   .0267788     1.28   0.201    -.0183134    .0867751
+        enr4 |   .0181814   .0269221     0.68   0.500    -.0346441    .0710069
+        enr5 |  -.0279227   .0280507    -1.00   0.320    -.0829627    .0271172
+        enr6 |   .0000137   .0265315     0.00   1.000    -.0520454    .0520729
+        enr7 |   -.010206   .0318322    -0.32   0.749    -.0726659    .0522539
+        enr8 |  -.0118525   .0385307    -0.31   0.758     -.087456    .0637511
+        enr9 |  -.0008851   .0364868    -0.02   0.981    -.0724783     .070708
+cont_catho~c |   .1476963   .0329614     4.48   0.000     .0830206     .212372
+cont_relig~s |   .0616636   .0517143     1.19   0.233    -.0398083    .1631354
+cont_private |   .1528961   .0356118     4.29   0.000     .0830199    .2227722
+      urban2 |  -.0236057   .0193205    -1.22   0.222    -.0615158    .0143043
+      urban3 |  -.0322888   .0230628    -1.40   0.162    -.0775418    .0129642
+      urban4 |   -.141916   .2094438    -0.68   0.498     -.552879    .2690469
+       _cons |  -.4219624    .050772    -8.31   0.000    -.5215854   -.3223394
+------------------------------------------------------------------------------
+
+. 
+. rcr college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if ma
+> le, clust(F1SCH_ID) lambda(-1 0)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4196
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.753909   .1128323    24.41   0.000     2.532761    2.975056
+    betaxInf |   .6227321   .0843837     7.38   0.000      .457343    .7881212
+     lambda0 |   .7841369   .1591657     4.93   0.000     .4721778    1.096096
+      betaxL |   .0963547   .0137555     7.00   0.000     .0693945     .123315
+      betaxH |   .1855341   .0185997     9.98   0.000     .1490794    .2219888
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0693945    .2219888
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if ma
+> le, clust(F1SCH_ID) lambda(0 .5)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4196
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.753909   .1128323    24.41   0.000     2.532761    2.975056
+    betaxInf |   .6227321   .0843837     7.38   0.000      .457343    .7881212
+     lambda0 |   .7841369   .1591657     4.93   0.000     .4721778    1.096096
+      betaxL |    .038452    .018081     2.13   0.033     .0030138    .0738901
+      betaxH |   .0963547   .0137555     7.00   0.000     .0693945     .123315
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0030138     .123315
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr college_grad sport blackSport by73-by75 race_native race_black race_hisp 
+> race_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr
+> 2-enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if ma
+> le, clust(F1SCH_ID)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4196
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.753909   .1128323    24.41   0.000     2.532761    2.975056
+    betaxInf |   .6227321   .0843837     7.38   0.000      .457343    .7881212
+     lambda0 |   .7841369   .1591657     4.93   0.000     .4721778    1.096096
+      betaxL |  -.0326004   .0275653    -1.18   0.237    -.0866275    .0214266
+      betaxH |   .0963547   .0137555     7.00   0.000     .0693945     .123315
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0866275     .123315
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. 
+. 
+. /*  Attend post-secondary education */
+. 
+. reg post_second sport if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F(  1,  1100) =   48.10
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0103
+                                                       Root MSE      =  .32481
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0662994   .0095596     6.94   0.000     .0475422    .0850565
+       _cons |    .845929   .0081795   103.42   0.000     .8298798    .8619783
+------------------------------------------------------------------------------
+
+. 
+. reg post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F( 33,  1100) =   16.72
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1272
+                                                       Root MSE      =  .30605
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |    .035863    .009645     3.72   0.000     .0169384    .0547876
+  blackSport |  -.0125345   .0316457    -0.40   0.692    -.0746273    .0495583
+        by73 |   .1187462   .0594605     2.00   0.046     .0020774    .2354151
+        by74 |   .1379382   .0586293     2.35   0.019     .0229003     .252976
+        by75 |   .1472896    .063494     2.32   0.021     .0227065    .2718727
+ race_native |  -.0500234   .0645399    -0.78   0.438    -.1766587    .0766118
+  race_black |   .0683017   .0236534     2.89   0.004     .0218909    .1147125
+   race_hisp |   .0246686   .0176292     1.40   0.162     -.009922    .0592593
+    race_api |   .0377867   .0131163     2.88   0.004     .0120509    .0635225
+   hh_father |   .0026189   .0122733     0.21   0.831    -.0214628    .0267006
+   hh_mother |  -.0167658   .0213658    -0.78   0.433    -.0586881    .0251566
+   ed_mother |   .0139642   .0090401     1.54   0.123    -.0037737     .031702
+   ed_father |   .0362091    .008939     4.05   0.000     .0186696    .0537486
+     inc_low |  -.0795757   .0153762    -5.18   0.000    -.1097456   -.0494057
+    inc_high |   .0092833   .0095901     0.97   0.333    -.0095336    .0281002
+    math_irt |   .0035224   .0005271     6.68   0.000     .0024881    .0045567
+    read_irt |   .0046025   .0007652     6.01   0.000     .0031011     .006104
+   frqabsent |  -.0571655    .023736    -2.41   0.016    -.1037385   -.0105924
+    handicap |   -.142436    .054441    -2.62   0.009     -.249256   -.0356161
+        enr2 |  -.0266753   .0212297    -1.26   0.209    -.0683305    .0149799
+        enr3 |  -.0073299   .0195725    -0.37   0.708    -.0457336    .0310738
+        enr4 |   .0127855   .0202149     0.63   0.527    -.0268786    .0524497
+        enr5 |   .0060053   .0205979     0.29   0.771    -.0344103    .0464209
+        enr6 |  -.0059024     .02065    -0.29   0.775    -.0464203    .0346155
+        enr7 |    -.01358   .0215061    -0.63   0.528    -.0557776    .0286176
+        enr8 |    .050297   .0242011     2.08   0.038     .0028114    .0977826
+        enr9 |   .0509105   .0233084     2.18   0.029     .0051765    .0966445
+cont_catho~c |   .0443654   .0156993     2.83   0.005     .0135614    .0751693
+cont_relig~s |   .0337403   .0237185     1.42   0.155    -.0127983     .080279
+cont_private |  -.0023618   .0193667    -0.12   0.903    -.0403618    .0356381
+      urban2 |   -.015142   .0112576    -1.35   0.179    -.0372309    .0069468
+      urban3 |  -.0238198   .0152765    -1.56   0.119    -.0537941    .0061546
+      urban4 |   .1058481   .0198052     5.34   0.000     .0669879    .1447084
+       _cons |    .480271    .066933     7.18   0.000     .3489402    .6116018
+------------------------------------------------------------------------------
+
+. 
+. rcr post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, clust(F1SCH_ID) lambda(-1 0)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309256   .0843726    27.37   0.000     2.143889    2.474623
+    betaxInf |   .2286061   .0308184     7.42   0.000     .1682031    .2890091
+     lambda0 |   .3157555   .0951021     3.32   0.001     .1293587    .5021523
+      betaxL |    .035863   .0096113     3.73   0.000     .0170251    .0547009
+      betaxH |   .1024579   .0129734     7.90   0.000     .0770304    .1278853
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0170251    .1278853
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, clust(F1SCH_ID) lambda(0 .5)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309256   .0843726    27.37   0.000     2.143889    2.474623
+    betaxInf |   .2286061   .0308184     7.42   0.000     .1682031    .2890091
+     lambda0 |   .3157555   .0951021     3.32   0.001     .1293587    .5021523
+      betaxL |  -.0265232    .015642    -1.70   0.090     -.057181    .0041346
+      betaxH |    .035863   .0096113     3.73   0.000     .0170251    .0547009
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      -.057181    .0547009
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, clust(F1SCH_ID)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309256   .0843726    27.37   0.000     2.143889    2.474623
+    betaxInf |   .2286061   .0308184     7.42   0.000     .1682031    .2890091
+     lambda0 |   .3157555   .0951021     3.32   0.001     .1293587    .5021523
+      betaxL |  -.1294966   .0290974    -4.45   0.000    -.1865265   -.0724668
+      betaxH |    .035863   .0096113     3.73   0.000     .0170251    .0547009
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1865265    .0547009
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. reg post_second sport if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F(  1,  1080) =   41.19
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0124
+                                                       Root MSE      =  .36673
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |    .090007   .0140238     6.42   0.000       .06249     .117524
+       _cons |    .773934   .0129646    59.70   0.000     .7484953    .7993728
+------------------------------------------------------------------------------
+
+. 
+. reg post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F( 33,  1080) =   21.38
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1621
+                                                       Root MSE      =  .33907
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |    .069519    .013473     5.16   0.000     .0430828    .0959551
+  blackSport |  -.0276481   .0491906    -0.56   0.574    -.1241681    .0688719
+        by73 |   .1582321   .0450067     3.52   0.000     .0699216    .2465427
+        by74 |   .1945345   .0443944     4.38   0.000     .1074256    .2816435
+        by75 |   .1132285   .0700301     1.62   0.106    -.0241819    .2506389
+ race_native |  -.0132815   .0928623    -0.14   0.886    -.1954926    .1689295
+  race_black |   .0803377   .0448119     1.79   0.073    -.0075906     .168266
+   race_hisp |   .0898373   .0203673     4.41   0.000     .0498733    .1298013
+    race_api |   .0665265   .0184608     3.60   0.000     .0303033    .1027496
+   hh_father |   .0160357   .0149207     1.07   0.283    -.0132412    .0453125
+   hh_mother |   .0529397   .0265809     1.99   0.047     .0007837    .1050957
+   ed_mother |   .0368443   .0114008     3.23   0.001      .014474    .0592146
+   ed_father |   .0442978   .0116361     3.81   0.000      .021466    .0671297
+     inc_low |  -.0680192   .0185307    -3.67   0.000    -.1043795   -.0316588
+    inc_high |   .0167196   .0118464     1.41   0.158     -.006525    .0399642
+    math_irt |   .0051107   .0006058     8.44   0.000     .0039221    .0062994
+    read_irt |   .0036557   .0008113     4.51   0.000     .0020637    .0052476
+   frqabsent |   -.075942   .0295258    -2.57   0.010    -.1338765   -.0180076
+    handicap |  -.0022488   .0410674    -0.05   0.956    -.0828297    .0783321
+        enr2 |  -.0247974   .0246473    -1.01   0.315    -.0731595    .0235647
+        enr3 |  -.0148453   .0258705    -0.57   0.566    -.0656074    .0359168
+        enr4 |   .0050566   .0259928     0.19   0.846    -.0459456    .0560588
+        enr5 |   .0110377   .0264271     0.42   0.676    -.0408166     .062892
+        enr6 |   .0082095   .0256195     0.32   0.749    -.0420601    .0584791
+        enr7 |   .0352063   .0289172     1.22   0.224     -.021534    .0919465
+        enr8 |   .0484201    .032319     1.50   0.134     -.014995    .1118352
+        enr9 |   .0431737   .0330565     1.31   0.192    -.0216885    .1080358
+cont_catho~c |   .0977799   .0180215     5.43   0.000     .0624188    .1331409
+cont_relig~s |   .0175875   .0428345     0.41   0.681    -.0664608    .1016357
+cont_private |   .0258822   .0170416     1.52   0.129    -.0075562    .0593207
+      urban2 |   .0113418   .0146521     0.77   0.439     -.017408    .0400916
+      urban3 |  -.0226603   .0193388    -1.17   0.242    -.0606062    .0152857
+      urban4 |   .0623118   .0710815     0.88   0.381    -.0771616    .2017852
+       _cons |   .2038661   .0584891     3.49   0.001     .0891009    .3186312
+------------------------------------------------------------------------------
+
+. 
+. rcr post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, clust(F1SCH_ID) lambda(-1 0)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |   .2468363   .0567134     4.35   0.000       .13568    .3579925
+     lambda0 |   .9254444   .2656454     3.48   0.000      .404789      1.4461
+      betaxL |    .069519   .0134203     5.18   0.000     .0432157    .0958222
+      betaxH |   .1116025   .0176405     6.33   0.000     .0770278    .1461772
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0432157    .1461772
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, clust(F1SCH_ID) lambda(0 .5)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |   .2468363   .0567134     4.35   0.000       .13568    .3579925
+     lambda0 |   .9254444   .2656454     3.48   0.000      .404789      1.4461
+      betaxL |   .0374416   .0180095     2.08   0.038     .0021436    .0727397
+      betaxH |    .069519   .0134203     5.18   0.000     .0432157    .0958222
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0021436    .0958222
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr post_second sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, clust(F1SCH_ID)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |   .2468363   .0567134     4.35   0.000       .13568    .3579925
+     lambda0 |   .9254444   .2656454     3.48   0.000      .404789      1.4461
+      betaxL |  -.0079044   .0295004    -0.27   0.789    -.0657241    .0499153
+      betaxH |    .069519   .0134203     5.18   0.000     .0432157    .0958222
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0657241    .0958222
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. 
+. /*  Fitness Activity Analysis  */
+. 
+. reg fit_active sport if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4740
+                                                       F(  1,  1100) =   67.24
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0134
+                                                       Root MSE      =   .4876
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1134213   .0138322     8.20   0.000     .0862808    .1405617
+       _cons |   .5394572   .0104728    51.51   0.000     .5189083    .5600061
+------------------------------------------------------------------------------
+
+. 
+. reg fit_active sport blackSport by73-by75 race_native race_black race_hisp ra
+> ce_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-
+> enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fema
+> le, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4740
+                                                       F( 33,  1100) =    6.01
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0374
+                                                       Root MSE      =  .48326
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |    .103504   .0148689     6.96   0.000     .0743294    .1326785
+  blackSport |  -.1117829   .0487194    -2.29   0.022    -.2073763   -.0161895
+        by73 |  -.0615135   .0666276    -0.92   0.356     -.192245     .069218
+        by74 |  -.0177374   .0646125    -0.27   0.784    -.1445152    .1090404
+        by75 |  -.0804431   .0931617    -0.86   0.388    -.2632377    .1023516
+ race_native |  -.0164429   .0655887    -0.25   0.802     -.145136    .1122502
+  race_black |  -.1105117   .0338588    -3.26   0.001    -.1769468   -.0440767
+   race_hisp |  -.0470486   .0245399    -1.92   0.055    -.0951989    .0011017
+    race_api |  -.0866333   .0294057    -2.95   0.003    -.1443309   -.0289356
+   hh_father |   .0183339    .018097     1.01   0.311    -.0171746    .0538424
+   hh_mother |   .0129666   .0331275     0.39   0.696    -.0520336    .0779668
+   ed_mother |   .0215721   .0211001     1.02   0.307    -.0198289    .0629732
+   ed_father |   .0373246   .0198414     1.88   0.060    -.0016066    .0762558
+     inc_low |  -.0265242   .0197875    -1.34   0.180    -.0653498    .0123014
+    inc_high |   .0129965    .017225     0.75   0.451     -.020801     .046794
+    math_irt |   .0004431   .0008694     0.51   0.610    -.0012627    .0021489
+    read_irt |   .0006528   .0011967     0.55   0.586    -.0016953    .0030008
+   frqabsent |   .0087649   .0306167     0.29   0.775    -.0513089    .0688387
+    handicap |   -.080426   .0583796    -1.38   0.169    -.1949739    .0341219
+        enr2 |   .0467316   .0284749     1.64   0.101    -.0091396    .1026028
+        enr3 |   .0537735   .0310602     1.73   0.084    -.0071704    .1147174
+        enr4 |   .0279154   .0305737     0.91   0.361    -.0320738    .0879047
+        enr5 |   .0682497   .0290577     2.35   0.019     .0112349    .1252644
+        enr6 |   .0705971   .0297859     2.37   0.018     .0121536    .1290407
+        enr7 |   .0398036   .0331977     1.20   0.231    -.0253344    .1049416
+        enr8 |   .0378363   .0380784     0.99   0.321    -.0368783    .1125508
+        enr9 |    .028889   .0357773     0.81   0.420    -.0413105    .0990885
+cont_catho~c |  -.0185788   .0330655    -0.56   0.574    -.0834573    .0462997
+cont_relig~s |    .002583   .0507775     0.05   0.959    -.0970487    .1022146
+cont_private |   .0239305   .0385266     0.62   0.535    -.0516634    .0995244
+      urban2 |  -.0325769   .0195984    -1.66   0.097    -.0710313    .0058776
+      urban3 |  -.0286499   .0237358    -1.21   0.228    -.0752224    .0179226
+      urban4 |   .2075555   .1699106     1.22   0.222      -.12583    .5409409
+       _cons |   .5025232   .0784466     6.41   0.000     .3486014    .6564451
+------------------------------------------------------------------------------
+
+. 
+. rcr fit_active sport blackSport by73-by75 race_native race_black race_hisp ra
+> ce_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-
+> enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fema
+> le, clust(F1SCH_ID) lambda(-1 0)
+(5 missing values generated)
+(5 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4740
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.310028   .0844311    27.36   0.000     2.144546     2.47551
+    betaxInf |   .1663422   .0381129     4.36   0.000     .0916422    .2410422
+     lambda0 |   .5638269    .149065     3.78   0.000     .2716649    .8559889
+      betaxL |   .1663422    1160457     0.00   1.000     -2274453     2274453
+      betaxH |   .1663422    1160457     0.00   1.000     -2274453     2274453
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      -2274453     2274453
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr fit_active sport blackSport by73-by75 race_native race_black race_hisp ra
+> ce_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-
+> enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fema
+> le, clust(F1SCH_ID) lambda(0 .5)
+(5 missing values generated)
+(5 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4740
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.310028   .0844311    27.36   0.000     2.144546     2.47551
+    betaxInf |   .1663422   .0381129     4.36   0.000     .0916422    .2410422
+     lambda0 |   .5638269    .149065     3.78   0.000     .2716649    .8559889
+      betaxL |   .1663422    1160457     0.00   1.000     -2274453     2274453
+      betaxH |   .1663422    1160457     0.00   1.000     -2274453     2274453
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      -2274453     2274453
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr fit_active sport blackSport by73-by75 race_native race_black race_hisp ra
+> ce_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-
+> enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fema
+> le, clust(F1SCH_ID)
+(5 missing values generated)
+(5 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4740
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.310028   .0844311    27.36   0.000     2.144546     2.47551
+    betaxInf |   .1663422   .0381129     4.36   0.000     .0916422    .2410422
+     lambda0 |   .5638269    .149065     3.78   0.000     .2716649    .8559889
+      betaxL |          0   .0583776     0.00   1.000    -.1144179    .1144179
+      betaxH |   .1663422    1160457     0.00   1.000     -2274453     2274453
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1144179     2274453
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. reg fit_active sport if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4224
+                                                       F(  1,  1080) =  101.21
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0266
+                                                       Root MSE      =  .47161
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1710961   .0170068    10.06   0.000      .137726    .2044661
+       _cons |   .5261886   .0141582    37.16   0.000     .4984079    .5539692
+------------------------------------------------------------------------------
+
+. 
+. reg fit_active sport blackSport by73-by75 race_native race_black race_hisp ra
+> ce_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-
+> enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if male
+> , rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4224
+                                                       F( 33,  1080) =    5.48
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0402
+                                                       Root MSE      =  .47009
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1817022   .0175309    10.36   0.000     .1473036    .2161007
+  blackSport |  -.0886169   .0619795    -1.43   0.153    -.2102307    .0329968
+        by73 |  -.0014169   .0432239    -0.03   0.974    -.0862292    .0833954
+        by74 |   .0109863   .0417951     0.26   0.793    -.0710225    .0929951
+        by75 |   .0699553   .0844131     0.83   0.407    -.0956769    .2355874
+ race_native |  -.0064232   .0923944    -0.07   0.945     -.187716    .1748696
+  race_black |    .071349   .0529955     1.35   0.178    -.0326368    .1753348
+   race_hisp |   .0100309   .0277312     0.36   0.718    -.0443823     .064444
+    race_api |   .0270431   .0283782     0.95   0.341    -.0286396    .0827257
+   hh_father |  -.0056881   .0190142    -0.30   0.765    -.0429971    .0316209
+   hh_mother |  -.0227384   .0281452    -0.81   0.419    -.0779638    .0324869
+   ed_mother |    .024048   .0193555     1.24   0.214    -.0139306    .0620266
+   ed_father |   .0530497   .0190663     2.78   0.005     .0156386    .0904608
+     inc_low |   .0292541   .0204759     1.43   0.153    -.0109231    .0694312
+    inc_high |   .0171866   .0169711     1.01   0.311    -.0161135    .0504867
+    math_irt |  -.0023534   .0008548    -2.75   0.006    -.0040306   -.0006762
+    read_irt |   .0027595   .0011541     2.39   0.017     .0004949     .005024
+   frqabsent |  -.0052524   .0364092    -0.14   0.885    -.0766931    .0661884
+    handicap |   .0606495   .0524166     1.16   0.248    -.0422004    .1634995
+        enr2 |   .0444196   .0310294     1.43   0.153    -.0164651    .1053044
+        enr3 |   .0227266   .0316433     0.72   0.473    -.0393627     .084816
+        enr4 |   .0877706   .0303554     2.89   0.004     .0282083    .1473328
+        enr5 |   .0312752   .0314951     0.99   0.321    -.0305234    .0930739
+        enr6 |    .086142   .0303997     2.83   0.005     .0264928    .1457911
+        enr7 |   .0998365   .0347749     2.87   0.004     .0316025    .1680704
+        enr8 |   .0971966   .0387206     2.51   0.012     .0212205    .1731727
+        enr9 |   .0966983   .0415297     2.33   0.020     .0152103    .1781863
+cont_catho~c |   .0324358   .0305844     1.06   0.289    -.0275757    .0924473
+cont_relig~s |  -.0093572   .0561316    -0.17   0.868    -.1194965     .100782
+cont_private |  -.0254262    .038303    -0.66   0.507     -.100583    .0497306
+      urban2 |  -.0039323   .0195374    -0.20   0.841    -.0422678    .0344032
+      urban3 |   .0100866   .0240255     0.42   0.675    -.0370553    .0572285
+      urban4 |   .0442401   .2117771     0.21   0.835    -.3713011    .4597813
+       _cons |   .4511299   .0634982     7.10   0.000      .326536    .5757237
+------------------------------------------------------------------------------
+
+. 
+. rcr fit_active sport blackSport by73-by75 race_native race_black race_hisp ra
+> ce_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-
+> enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if male
+> , clust(F1SCH_ID) lambda(-1 0)
+(5 missing values generated)
+(5 missing values generated)
+
+
+RCR model                                             Number of obs =     4224
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.769402   .1134977    24.40   0.000      2.54695    2.991853
+    betaxInf |   .0897517   .0507349     1.77   0.077    -.0096869    .1891902
+     lambda0 |   1.828695   .9953564     1.84   0.066    -.1221675    3.779558
+      betaxL |   .1331254    .028979     4.59   0.000     .0763276    .1899231
+      betaxH |   .1817022   .0174623    10.41   0.000     .1474767    .2159276
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0763276    .2159276
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr fit_active sport blackSport by73-by75 race_native race_black race_hisp ra
+> ce_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-
+> enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if male
+> , clust(F1SCH_ID) lambda(0 .5)
+(5 missing values generated)
+(5 missing values generated)
+
+
+RCR model                                             Number of obs =     4224
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.769402   .1134977    24.40   0.000      2.54695    2.991853
+    betaxInf |   .0897517   .0507349     1.77   0.077    -.0096869    .1891902
+     lambda0 |   1.828695   .9953564     1.84   0.066    -.1221675    3.779558
+      betaxL |   .1817022   .0174623    10.41   0.000     .1474767    .2159276
+      betaxH |    .273892   .0463869     5.90   0.000     .1829753    .3648087
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .1474767    .3648087
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. 
+. /*  Binge Drinking Analysis  */
+. 
+. reg binge_drink sport if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4731
+                                                       F(  1,  1097) =   24.04
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0053
+                                                       Root MSE      =  .36573
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0531885    .010848     4.90   0.000     .0319033    .0744738
+       _cons |   .1337234    .007169    18.65   0.000     .1196568    .1477899
+------------------------------------------------------------------------------
+
+. 
+. reg binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4731
+                                                       F( 33,  1097) =    4.09
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0235
+                                                       Root MSE      =  .36359
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |    .046109   .0121272     3.80   0.000     .0223139     .069904
+  blackSport |  -.0321122   .0272066    -1.18   0.238    -.0854952    .0212707
+        by73 |   .0308133   .0350405     0.88   0.379    -.0379408    .0995673
+        by74 |   .0579584   .0346041     1.67   0.094    -.0099392     .125856
+        by75 |    .114836   .0654762     1.75   0.080    -.0136367    .2433088
+ race_native |  -.0203608   .0514552    -0.40   0.692    -.1213226    .0806009
+  race_black |  -.0972533   .0176198    -5.52   0.000    -.1318255    -.062681
+   race_hisp |  -.0303153   .0195918    -1.55   0.122     -.068757    .0081264
+    race_api |  -.0942622   .0192676    -4.89   0.000    -.1320676   -.0564567
+   hh_father |  -.0030908   .0128549    -0.24   0.810    -.0283138    .0221321
+   hh_mother |    -.00258   .0237805    -0.11   0.914    -.0492404    .0440803
+   ed_mother |   .0181498   .0160659     1.13   0.259    -.0133736    .0496732
+   ed_father |  -.0111081   .0147152    -0.75   0.450    -.0399812     .017765
+     inc_low |  -.0091174   .0142575    -0.64   0.523    -.0370926    .0188577
+    inc_high |   .0160102   .0138615     1.16   0.248    -.0111878    .0432082
+    math_irt |   .0009415   .0006431     1.46   0.143    -.0003204    .0022034
+    read_irt |  -.0011234    .000913    -1.23   0.219    -.0029148    .0006681
+   frqabsent |  -.0252378   .0222824    -1.13   0.258    -.0689588    .0184831
+    handicap |   .0042838   .0473302     0.09   0.928    -.0885841    .0971518
+        enr2 |   .0126522   .0235434     0.54   0.591    -.0335431    .0588475
+        enr3 |   .0183213   .0215911     0.85   0.396    -.0240432    .0606858
+        enr4 |   .0105764   .0248257     0.43   0.670    -.0381348    .0592876
+        enr5 |   .0130005   .0212446     0.61   0.541    -.0286842    .0546851
+        enr6 |   .0224584   .0219896     1.02   0.307     -.020688    .0656048
+        enr7 |   .0543135   .0271326     2.00   0.046     .0010759    .1075512
+        enr8 |   .0215687    .027977     0.77   0.441    -.0333259    .0764632
+        enr9 |   .0170902   .0297715     0.57   0.566    -.0413253    .0755058
+cont_catho~c |   .0438818   .0272937     1.61   0.108    -.0096721    .0974356
+cont_relig~s |  -.0528985   .0381765    -1.39   0.166    -.1278058    .0220088
+cont_private |   .0352819   .0372232     0.95   0.343    -.0377549    .1083187
+      urban2 |  -.0130092   .0161506    -0.81   0.421    -.0446987    .0186804
+      urban3 |  -.0149201   .0182971    -0.82   0.415    -.0508213    .0209811
+      urban4 |   -.118106   .0797345    -1.48   0.139    -.2745554    .0383433
+       _cons |   .0940752   .0479756     1.96   0.050    -.0000591    .1882094
+------------------------------------------------------------------------------
+
+. 
+. rcr binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, clust(F1SCH_ID) lambda(-1 0)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4731
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.311985   .0846105    27.33   0.000     2.146152    2.477819
+    betaxInf |   .0910307   .0258525     3.52   0.000     .0403607    .1417007
+     lambda0 |   .3881842   .1488515     2.61   0.009     .0964407    .6799278
+      betaxL |   .0910307   261313.7     0.00   1.000    -512165.4    512165.6
+      betaxH |   .0910307   261313.7     0.00   1.000    -512165.4    512165.6
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -512165.4    512165.6
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, clust(F1SCH_ID) lambda(0 .5)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4731
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.311985   .0846105    27.33   0.000     2.146152    2.477819
+    betaxInf |   .0910307   .0258525     3.52   0.000     .0403607    .1417007
+     lambda0 |   .3881842   .1488515     2.61   0.009     .0964407    .6799278
+      betaxL |          0   .0320793     0.00   1.000    -.0628743    .0628743
+      betaxH |   .0910307   261313.7     0.00   1.000    -512165.4    512165.6
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0628743    512165.6
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if fem
+> ale, clust(F1SCH_ID)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4731
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.311985   .0846105    27.33   0.000     2.146152    2.477819
+    betaxInf |   .0910307   .0258525     3.52   0.000     .0403607    .1417007
+     lambda0 |   .3881842   .1488515     2.61   0.009     .0964407    .6799278
+      betaxL |          0   .0320793     0.00   1.000    -.0628743    .0628743
+      betaxH |   .0910307   269282.7     0.00   1.000    -527784.3    527784.4
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0628743    527784.4
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. reg binge_drink sport if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4213
+                                                       F(  1,  1080) =   55.27
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0125
+                                                       Root MSE      =   .4858
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1197969   .0161143     7.43   0.000     .0881781    .1514157
+       _cons |   .3099274   .0132802    23.34   0.000     .2838695    .3359853
+------------------------------------------------------------------------------
+
+. 
+. reg binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4213
+                                                       F( 33,  1080) =    5.63
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0398
+                                                       Root MSE      =  .48085
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1104088   .0172015     6.42   0.000     .0766567    .1441609
+  blackSport |  -.0418799   .0548177    -0.76   0.445    -.1494412    .0656814
+        by73 |   .0598873   .0416399     1.44   0.151     -.021817    .1415916
+        by74 |   .0567856   .0409859     1.39   0.166    -.0236355    .1372066
+        by75 |   .0544146   .0852484     0.64   0.523    -.1128567    .2216859
+ race_native |  -.0155146   .0813176    -0.19   0.849     -.175073    .1440437
+  race_black |   -.116714   .0487626    -2.39   0.017    -.2123941   -.0210339
+   race_hisp |  -.0389226   .0274588    -1.42   0.157    -.0928013    .0149561
+    race_api |  -.1168499   .0269239    -4.34   0.000     -.169679   -.0640208
+   hh_father |  -.0400259   .0197095    -2.03   0.043    -.0786992   -.0013526
+   hh_mother |   .0309951    .030243     1.02   0.306    -.0283466    .0903368
+   ed_mother |  -.0271544    .021281    -1.28   0.202    -.0689111    .0146024
+   ed_father |   .0134861   .0221021     0.61   0.542    -.0298819     .056854
+     inc_low |  -.0598869   .0222307    -2.69   0.007    -.1035072   -.0162666
+    inc_high |    .062606    .018297     3.42   0.001     .0267044    .0985076
+    math_irt |   .0001285   .0008772     0.15   0.884    -.0015927    .0018496
+    read_irt |  -.0016847   .0011781    -1.43   0.153    -.0039963    .0006269
+   frqabsent |  -.0095755   .0370877    -0.26   0.796    -.0823476    .0631967
+    handicap |  -.1050886   .0491659    -2.14   0.033    -.2015601   -.0086171
+        enr2 |   .0298467   .0357707     0.83   0.404    -.0403413    .1000346
+        enr3 |    .013382   .0327891     0.41   0.683    -.0509555    .0777195
+        enr4 |  -.0175914   .0315233    -0.56   0.577    -.0794453    .0442626
+        enr5 |  -.0171044   .0335613    -0.51   0.610    -.0829572    .0487483
+        enr6 |  -.0463881   .0318246    -1.46   0.145    -.1088331    .0160569
+        enr7 |  -.0158406   .0372886    -0.42   0.671    -.0890068    .0573257
+        enr8 |  -.0220738    .040271    -0.55   0.584    -.1010921    .0569444
+        enr9 |  -.0467127   .0374349    -1.25   0.212    -.1201662    .0267408
+cont_catho~c |   .0505893   .0329614     1.53   0.125    -.0140864     .115265
+cont_relig~s |  -.2020302   .0446559    -4.52   0.000    -.2896523   -.1144081
+cont_private |  -.0184046   .0432078    -0.43   0.670    -.1031852    .0663761
+      urban2 |   .0022708   .0202098     0.11   0.911    -.0373841    .0419256
+      urban3 |  -.0009584   .0258879    -0.04   0.970    -.0517547     .049838
+      urban4 |  -.0969343   .1283261    -0.76   0.450    -.3487311    .1548624
+       _cons |   .3392892   .0647485     5.24   0.000     .2122422    .4663363
+------------------------------------------------------------------------------
+
+. 
+. rcr binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, clust(F1SCH_ID) lambda(-1 0)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4213
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.773863    .113746    24.39   0.000     2.550925    2.996801
+    betaxInf |   .1920322   .0502149     3.82   0.000     .0936128    .2904516
+     lambda0 |   .7841844   .2438162     3.22   0.001     .3063135    1.262055
+      betaxL |   .1920322   127992.3     0.00   1.000    -250860.1    250860.5
+      betaxH |   .1920322   127992.3     0.00   1.000    -250860.1    250860.5
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -250860.1    250860.5
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, clust(F1SCH_ID) lambda(0 .5)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4213
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.773863    .113746    24.39   0.000     2.550925    2.996801
+    betaxInf |   .1920322   .0502149     3.82   0.000     .0936128    .2904516
+     lambda0 |   .7841844   .2438162     3.22   0.001     .3063135    1.262055
+      betaxL |   .1920322   127992.3     0.00   1.000    -250860.1    250860.5
+      betaxH |   .1920322   127992.3     0.00   1.000    -250860.1    250860.5
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -250860.1    250860.5
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr binge_drink sport blackSport by73-by75 race_native race_black race_hisp r
+> ace_api hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2
+> -enr9 cont_catholic cont_religious cont_private urban2 urban3 urban4   if mal
+> e, clust(F1SCH_ID)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4213
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.773863    .113746    24.39   0.000     2.550925    2.996801
+    betaxInf |   .1920322   .0502149     3.82   0.000     .0936128    .2904516
+     lambda0 |   .7841844   .2438162     3.22   0.001     .3063135    1.262055
+      betaxL |          0   .0707868     0.00   1.000    -.1387396    .1387396
+      betaxH |   .1920322   127992.3     0.00   1.000    -250860.1    250860.5
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1387396    250860.5
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. /*   Income and work Analysis   */
+. 
+. reg workft sport if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4741
+                                                       F(  1,  1100) =    4.12
+                                                       Prob > F      =  0.0427
+                                                       R-squared     =  0.0009
+                                                       Root MSE      =  .44885
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0266997    .013162     2.03   0.043     .0008743    .0525252
+       _cons |   .7068894   .0098452    71.80   0.000     .6875719    .7262068
+------------------------------------------------------------------------------
+
+. 
+. reg workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4741
+                                                       F( 33,  1100) =    3.14
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0213
+                                                       Root MSE      =  .44575
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0394699   .0140368     2.81   0.005      .011928    .0670118
+  blackSport |  -.0585554   .0430194    -1.36   0.174    -.1429649     .025854
+        by73 |   .1701522   .0658994     2.58   0.010     .0408494     .299455
+        by74 |   .1907786   .0654236     2.92   0.004     .0624095    .3191478
+        by75 |   .1291952   .0907571     1.42   0.155    -.0488815    .3072718
+ race_native |  -.0914269   .0627931    -1.46   0.146    -.2146347     .031781
+  race_black |   .0819605   .0285006     2.88   0.004     .0260388    .1378822
+   race_hisp |  -.0414313   .0226377    -1.83   0.067    -.0858493    .0029866
+    race_api |  -.0615378   .0270985    -2.27   0.023    -.1147083   -.0083673
+   hh_father |   .0380145   .0165446     2.30   0.022     .0055519     .070477
+   hh_mother |   .0762082    .032429     2.35   0.019     .0125786    .1398378
+   ed_mother |   .0194825    .020057     0.97   0.332    -.0198719    .0588368
+   ed_father |  -.0266346   .0185757    -1.43   0.152    -.0630825    .0098133
+     inc_low |   .0073751   .0182418     0.40   0.686    -.0284176    .0431678
+    inc_high |  -.0010448   .0163786    -0.06   0.949    -.0331817     .031092
+    math_irt |  -.0001437   .0008547    -0.17   0.866    -.0018207    .0015333
+    read_irt |   .0010672   .0011297     0.94   0.345    -.0011495    .0032839
+   frqabsent |  -.0589006   .0286423    -2.06   0.040    -.1151004   -.0027009
+    handicap |  -.0759662   .0622593    -1.22   0.223    -.1981266    .0461943
+        enr2 |  -.0156246   .0292175    -0.53   0.593     -.072953    .0417039
+        enr3 |   .0322652   .0275088     1.17   0.241    -.0217104    .0862408
+        enr4 |   .0427171   .0292921     1.46   0.145    -.0147575    .1001917
+        enr5 |   .0445094   .0270653     1.64   0.100    -.0085962    .0976149
+        enr6 |   .0781076   .0265173     2.95   0.003     .0260773    .1301378
+        enr7 |   .0521909   .0310874     1.68   0.093    -.0088064    .1131882
+        enr8 |   .0341261   .0351265     0.97   0.332    -.0347964    .1030485
+        enr9 |   .0267649   .0370691     0.72   0.470    -.0459691     .099499
+cont_catho~c |   .0493606   .0307754     1.60   0.109    -.0110245    .1097457
+cont_relig~s |  -.0990281    .044265    -2.24   0.025    -.1858815   -.0121747
+cont_private |  -.0820476   .0446711    -1.84   0.067    -.1696979    .0056027
+      urban2 |  -.0270878   .0187498    -1.44   0.149    -.0638772    .0097017
+      urban3 |  -.0020642   .0210744    -0.10   0.922    -.0434149    .0392864
+      urban4 |  -.1294429   .1144154    -1.13   0.258      -.35394    .0950542
+       _cons |   .3823681   .0847653     4.51   0.000     .2160482    .5486881
+------------------------------------------------------------------------------
+
+. 
+. rcr workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> clust(F1SCH_ID) lambda(-1 0)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4741
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309688   .0844146    27.36   0.000     2.144239    2.475138
+    betaxInf |  -.0414247    .034725    -1.19   0.233    -.1094845    .0266352
+     lambda0 |   -.719669   .6598813    -1.09   0.275    -2.013013    .5736747
+      betaxL |  -.0066721   .0209832    -0.32   0.751    -.0477983    .0344542
+      betaxH |   .0394699   .0139879     2.82   0.005     .0120542    .0668856
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0477983    .0668856
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> clust(F1SCH_ID) lambda(0 .5)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4741
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309688   .0844146    27.36   0.000     2.144239    2.475138
+    betaxInf |  -.0414247    .034725    -1.19   0.233    -.1094845    .0266352
+     lambda0 |   -.719669   .6598813    -1.09   0.275    -2.013013    .5736747
+      betaxL |   .0394699   .0139879     2.82   0.005     .0120542    .0668856
+      betaxH |   .1486497   .0400877     3.71   0.000     .0700791    .2272202
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0120542    .2272202
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> clust(F1SCH_ID)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4741
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309688   .0844146    27.36   0.000     2.144239    2.475138
+    betaxInf |  -.0414247    .034725    -1.19   0.233    -.1094845    .0266352
+     lambda0 |   -.719669   .6598813    -1.09   0.275    -2.013013    .5736747
+      betaxL |   .0394699   .0139879     2.82   0.005     .0120542    .0668856
+      betaxH |   .4064325   .0462539     8.79   0.000     .3157766    .4970885
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0120542    .4970885
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. reg workft sport if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F(  1,  1080) =    0.33
+                                                       Prob > F      =  0.5632
+                                                       R-squared     =  0.0001
+                                                       Root MSE      =  .36283
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0070807    .012246     0.58   0.563     -.016948    .0311093
+       _cons |    .839099   .0105869    79.26   0.000     .8183256    .8598723
+------------------------------------------------------------------------------
+
+. 
+. reg workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, ro
+> b clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F( 33,  1080) =    4.53
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0349
+                                                       Root MSE      =  .35781
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0152727   .0125717     1.21   0.225     -.009395    .0399403
+  blackSport |  -.0259386    .052088    -0.50   0.619    -.1281438    .0762666
+        by73 |  -.0588974   .0268837    -2.19   0.029    -.1116475   -.0061472
+        by74 |   -.052158   .0264028    -1.98   0.048    -.1039647   -.0003513
+        by75 |   .0539873   .0564089     0.96   0.339    -.0566961    .1646707
+ race_native |  -.0704738   .0721903    -0.98   0.329     -.212123    .0711754
+  race_black |  -.0610702   .0446009    -1.37   0.171    -.1485845     .026444
+   race_hisp |  -.0419828   .0193545    -2.17   0.030    -.0799596    -.004006
+    race_api |   -.093578   .0254028    -3.68   0.000    -.1434225   -.0437335
+   hh_father |   .0344294   .0148892     2.31   0.021     .0052143    .0636445
+   hh_mother |   .0271775   .0246116     1.10   0.270    -.0211146    .0754695
+   ed_mother |  -.0054109   .0161074    -0.34   0.737    -.0370163    .0261944
+   ed_father |  -.0293125   .0156173    -1.88   0.061    -.0599561    .0013311
+     inc_low |  -.0128022   .0159594    -0.80   0.423    -.0441171    .0185128
+    inc_high |  -.0277367   .0150197    -1.85   0.065    -.0572078    .0017343
+    math_irt |  -.0017478   .0006716    -2.60   0.009    -.0030655   -.0004301
+    read_irt |  -.0017293   .0009198    -1.88   0.060    -.0035342    .0000756
+   frqabsent |  -.0290434   .0272695    -1.07   0.287    -.0825506    .0244637
+    handicap |   .0091534   .0387147     0.24   0.813    -.0668112    .0851179
+        enr2 |  -.0278883   .0201917    -1.38   0.168    -.0675077     .011731
+        enr3 |  -.0496625   .0210473    -2.36   0.018    -.0909607   -.0083642
+        enr4 |   -.040426   .0205548    -1.97   0.049    -.0807579   -.0000941
+        enr5 |  -.0370019   .0208226    -1.78   0.076    -.0778593    .0038555
+        enr6 |  -.0512524   .0197537    -2.59   0.010    -.0900123   -.0124925
+        enr7 |  -.0427884   .0243546    -1.76   0.079    -.0905761    .0049994
+        enr8 |  -.0522353   .0288817    -1.81   0.071    -.1089058    .0044352
+        enr9 |  -.0326494   .0270973    -1.20   0.229    -.0858187    .0205198
+cont_catho~c |   .0044951   .0247119     0.18   0.856    -.0439937     .052984
+cont_relig~s |  -.0867468   .0482908    -1.80   0.073    -.1815011    .0080076
+cont_private |  -.0425504   .0324655    -1.31   0.190    -.1062531    .0211523
+      urban2 |   .0418863   .0156487     2.68   0.008      .011181    .0725915
+      urban3 |   .0411501   .0179689     2.29   0.022     .0058921    .0764081
+      urban4 |  -.0126373   .0694913    -0.18   0.856    -.1489905    .1237159
+       _cons |   .9989385   .0441532    22.62   0.000     .9123027    1.085574
+------------------------------------------------------------------------------
+
+. 
+. rcr workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, cl
+> ust(F1SCH_ID) lambda(-1 0)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |  -.0556264   .0425684    -1.31   0.191    -.1390589    .0278062
+     lambda0 |   -.397878   .4509378    -0.88   0.378      -1.2817    .4859439
+      betaxL |  -.0137439   .0191321    -0.72   0.473    -.0512421    .0237543
+      betaxH |   .0152727   .0125225     1.22   0.223    -.0092709    .0398163
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0512421    .0398163
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, cl
+> ust(F1SCH_ID) lambda(0 .5)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |  -.0556264   .0425684    -1.31   0.191    -.1390589    .0278062
+     lambda0 |   -.397878   .4509378    -0.88   0.378      -1.2817    .4859439
+      betaxL |   .0152727   .0125225     1.22   0.223    -.0092709    .0398163
+      betaxH |   .0514596   .0273872     1.88   0.060    -.0022183    .1051374
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0092709    .1051374
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr workft sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, cl
+> ust(F1SCH_ID)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |  -.0556264   .0425684    -1.31   0.191    -.1390589    .0278062
+     lambda0 |   -.397878   .4509378    -0.88   0.378      -1.2817    .4859439
+      betaxL |   .0152727   .0125225     1.22   0.223    -.0092709    .0398163
+      betaxH |   .1414133   .0638106     2.22   0.027     .0163467    .2664798
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0092709    .2664798
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. gen loginc = log(inc99)
+(1033 missing values generated)
+
+. 
+. reg loginc sport if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4072
+                                                       F(  1,  1061) =   29.32
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0065
+                                                       Root MSE      =  .80147
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1300445    .024017     5.41   0.000     .0829182    .1771707
+       _cons |   9.765541   .0184326   529.80   0.000     9.729373     9.80171
+------------------------------------------------------------------------------
+
+. 
+. reg loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4072
+                                                       F( 33,  1061) =    8.35
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0600
+                                                       Root MSE      =  .78269
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0842628   .0257548     3.27   0.001     .0337267    .1347989
+  blackSport |  -.0088531   .0845802    -0.10   0.917    -.1748167    .1571104
+        by73 |    .296641   .1697426     1.75   0.081    -.0364284    .6297104
+        by74 |   .3401833   .1674307     2.03   0.042     .0116503    .6687163
+        by75 |   .3494585    .203994     1.71   0.087     -.050819    .7497361
+ race_native |  -.3914236   .1748152    -2.24   0.025    -.7344464   -.0484008
+  race_black |    .108243   .0574071     1.89   0.060    -.0044014    .2208873
+   race_hisp |   .0255449   .0426102     0.60   0.549     -.058065    .1091547
+    race_api |   .0221096   .0542882     0.41   0.684    -.0844149    .1286341
+   hh_father |   .0649245   .0315042     2.06   0.040     .0031069     .126742
+   hh_mother |  -.0431679   .0482926    -0.89   0.372    -.1379277    .0515918
+   ed_mother |  -.0200113   .0374156    -0.53   0.593    -.0934283    .0534056
+   ed_father |   .0507111   .0345852     1.47   0.143    -.0171521    .1185743
+     inc_low |  -.1156657   .0354589    -3.26   0.001    -.1852433   -.0460881
+    inc_high |   .0224698   .0332388     0.68   0.499    -.0427516    .0876911
+    math_irt |   .0078057    .001524     5.12   0.000     .0048152    .0107962
+    read_irt |   .0025468    .001973     1.29   0.197    -.0013246    .0064183
+   frqabsent |  -.0774946   .0551565    -1.40   0.160    -.1857227    .0307336
+    handicap |  -.0076937   .0962398    -0.08   0.936    -.1965356    .1811483
+        enr2 |  -.0396332   .0507386    -0.78   0.435    -.1391926    .0599263
+        enr3 |   .0965546   .0463097     2.08   0.037     .0056855    .1874236
+        enr4 |    .073391   .0521737     1.41   0.160    -.0289844    .1757664
+        enr5 |   .0241046    .054669     0.44   0.659     -.083167    .1313762
+        enr6 |   .0933876   .0520589     1.79   0.073    -.0087626    .1955378
+        enr7 |   .0461888   .0569582     0.81   0.418    -.0655748    .1579523
+        enr8 |  -.0395323   .0692817    -0.57   0.568     -.175477    .0964125
+        enr9 |   .1543042   .0705127     2.19   0.029     .0159439    .2926645
+cont_catho~c |   .2089975   .0544149     3.84   0.000     .1022245    .3157706
+cont_relig~s |  -.0721721   .0954333    -0.76   0.450    -.2594315    .1150872
+cont_private |  -.0009538   .0686872    -0.01   0.989     -.135732    .1338244
+      urban2 |   .0365777   .0356749     1.03   0.305    -.0334237     .106579
+      urban3 |  -.0301165   .0407226    -0.74   0.460    -.1100225    .0497894
+      urban4 |   .4618546   .1409185     3.28   0.001     .1853439    .7383652
+       _cons |   9.020885   .1914355    47.12   0.000     8.645249     9.39652
+------------------------------------------------------------------------------
+
+. 
+. rcr loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> clust(F1SCH_ID) lambda(-1 0)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4072
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.284306   .0853283    26.77   0.000     2.117065    2.451546
+    betaxInf |   .3689358    .071012     5.20   0.000     .2297547    .5081168
+     lambda0 |   .2948743   .1102221     2.68   0.007     .0788429    .5109056
+      betaxL |   .3689358   42686.26     0.00   1.000    -83663.16    83663.89
+      betaxH |   .3689358   42686.26     0.00   1.000    -83663.16    83663.89
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -83663.16    83663.89
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> clust(F1SCH_ID) lambda(0 .5)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4072
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.284306   .0853283    26.77   0.000     2.117065    2.451546
+    betaxInf |   .3689358    .071012     5.20   0.000     .2297547    .5081168
+     lambda0 |   .2948743   .1102221     2.68   0.007     .0788429    .5109056
+      betaxL |          0   .0392394     0.00   1.000    -.0769078    .0769078
+      betaxH |   .3689358   42686.26     0.00   1.000    -83663.16    83663.89
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0769078    83663.89
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, 
+> clust(F1SCH_ID)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4072
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.284306   .0853283    26.77   0.000     2.117065    2.451546
+    betaxInf |   .3689358    .071012     5.20   0.000     .2297547    .5081168
+     lambda0 |   .2948743   .1102221     2.68   0.007     .0788429    .5109056
+      betaxL |          0   .0392394     0.00   1.000    -.0769078    .0769078
+      betaxH |   .3689358   42686.26     0.00   1.000    -83663.16    83663.89
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0769078    83663.89
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. reg loginc sport if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    3864
+                                                       F(  1,  1062) =   31.32
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0081
+                                                       Root MSE      =  .69708
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .1382677   .0247055     5.60   0.000     .0897905     .186745
+       _cons |   10.07127   .0212406   474.15   0.000     10.02959    10.11294
+------------------------------------------------------------------------------
+
+. 
+. reg loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, ro
+> b clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    3864
+                                                       F( 33,  1062) =    4.63
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0322
+                                                       Root MSE      =  .69146
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |    .127494   .0262117     4.86   0.000     .0760615    .1789265
+  blackSport |   .0085365   .0817602     0.10   0.917    -.1518934    .1689664
+        by73 |  -.0092614   .0655196    -0.14   0.888    -.1378241    .1193012
+        by74 |   -.005105   .0640448    -0.08   0.936    -.1307737    .1205636
+        by75 |   .1880094   .1207343     1.56   0.120    -.0488954    .4249142
+ race_native |  -.2601735    .131804    -1.97   0.049    -.5187994   -.0015476
+  race_black |  -.1246196   .0714157    -1.74   0.081    -.2647515    .0155123
+   race_hisp |  -.1477682   .0437312    -3.38   0.001    -.2335776   -.0619588
+    race_api |  -.0077302   .0616774    -0.13   0.900    -.1287535    .1132931
+   hh_father |   .0858376   .0285476     3.01   0.003     .0298214    .1418538
+   hh_mother |  -.0084526   .0441334    -0.19   0.848    -.0950511     .078146
+   ed_mother |   .0502553    .032874     1.53   0.127    -.0142501    .1147606
+   ed_father |   -.042696   .0335131    -1.27   0.203    -.1084554    .0230635
+     inc_low |  -.0565916   .0294234    -1.92   0.055    -.1143262    .0011429
+    inc_high |   .0295919   .0282497     1.05   0.295    -.0258397    .0850235
+    math_irt |   .0032636   .0013879     2.35   0.019     .0005402     .005987
+    read_irt |  -.0057205   .0018089    -3.16   0.002    -.0092699   -.0021711
+   frqabsent |  -.0779029   .0509359    -1.53   0.126    -.1778494    .0220436
+    handicap |   .0092344   .0765474     0.12   0.904     -.140967    .1594358
+        enr2 |   .0197933   .0417229     0.47   0.635    -.0620754     .101662
+        enr3 |    .012747   .0465088     0.27   0.784    -.0785127    .1040066
+        enr4 |   .0366753   .0439326     0.83   0.404    -.0495293    .1228799
+        enr5 |   .0298227   .0411132     0.73   0.468    -.0508496     .110495
+        enr6 |  -.0361801   .0448683    -0.81   0.420    -.1242208    .0518605
+        enr7 |  -.0145672   .0510268    -0.29   0.775     -.114692    .0855577
+        enr8 |   .0761511    .063234     1.20   0.229    -.0479267    .2002289
+        enr9 |   .0884023   .0648908     1.36   0.173    -.0389265     .215731
+cont_catho~c |   .0981522   .0488466     2.01   0.045     .0023055     .193999
+cont_relig~s |   .0691207   .1020355     0.68   0.498    -.1310934    .2693348
+cont_private |  -.0072021   .0628823    -0.11   0.909    -.1305898    .1161857
+      urban2 |   .0401752   .0326038     1.23   0.218       -.0238    .1041504
+      urban3 |   .0843197    .036031     2.34   0.019     .0136196    .1550197
+      urban4 |  -.4038219   .1568261    -2.57   0.010    -.7115461   -.0960977
+       _cons |   10.01958   .1035309    96.78   0.000     9.816428    10.22272
+------------------------------------------------------------------------------
+
+. 
+. rcr loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, cl
+> ust(F1SCH_ID) lambda(-1 0)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     3864
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.823472   .1209469    23.34   0.000      2.58642    3.060523
+    betaxInf |   .2241561   .0754992     2.97   0.003     .0761804    .3721317
+     lambda0 |   .7408189   .2836579     2.61   0.009     .1848596    1.296778
+      betaxL |   .2241561   104188.2     0.00   1.000    -204204.9    204205.4
+      betaxH |   .2241561   104188.2     0.00   1.000    -204204.9    204205.4
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -204204.9    204205.4
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, cl
+> ust(F1SCH_ID) lambda(0 .5)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     3864
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.823472   .1209469    23.34   0.000      2.58642    3.060523
+    betaxInf |   .2241561   .0754992     2.97   0.003     .0761804    .3721317
+     lambda0 |   .7408189   .2836579     2.61   0.009     .1848596    1.296778
+      betaxL |   .2241561   104188.2     0.00   1.000    -204204.9    204205.4
+      betaxH |   .2241561   104188.2     0.00   1.000    -204204.9    204205.4
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -204204.9    204205.4
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr loginc sport blackSport by73-by75 race_native race_black race_hisp race_a
+> pi hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9
+>  cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, cl
+> ust(F1SCH_ID)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     3864
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.823472   .1209469    23.34   0.000      2.58642    3.060523
+    betaxInf |   .2241561   .0754992     2.97   0.003     .0761804    .3721317
+     lambda0 |   .7408189   .2836579     2.61   0.009     .1848596    1.296778
+      betaxL |          0   .1023194     0.00   1.000    -.2005423    .2005423
+      betaxH |   .2241561   104188.2     0.00   1.000    -204204.9    204205.4
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.2005423    204205.4
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. /*  Voter Analysis  */
+. 
+. reg voter sport blackSport if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F(  2,  1100) =    9.06
+                                                       Prob > F      =  0.0001
+                                                       R-squared     =  0.0038
+                                                       Root MSE      =  .45104
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0524675   .0132777     3.95   0.000     .0264151      .07852
+  blackSport |  -.0869313   .0395237    -2.20   0.028    -.1644816    -.009381
+       _cons |   .6914405    .009961    69.41   0.000     .6718957    .7109853
+------------------------------------------------------------------------------
+
+. 
+. reg voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, r
+> ob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F( 33,  1100) =   10.23
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0585
+                                                       Root MSE      =  .43992
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0232322   .0138934     1.67   0.095    -.0040284    .0504929
+  blackSport |  -.1380259   .0459366    -3.00   0.003    -.2281592   -.0478926
+        by73 |  -.0417789   .0597704    -0.70   0.485    -.1590558    .0754981
+        by74 |  -.0442497   .0592384    -0.75   0.455    -.1604828    .0719833
+        by75 |  -.2278252   .0879524    -2.59   0.010    -.4003986   -.0552519
+ race_native |  -.0660308   .0591966    -1.12   0.265    -.1821819    .0501202
+  race_black |    .105297   .0300031     3.51   0.000     .0464271    .1641668
+   race_hisp |  -.0321268    .024847    -1.29   0.196    -.0808797     .016626
+    race_api |  -.2101459   .0279859    -7.51   0.000    -.2650576   -.1552342
+   hh_father |   .0273618    .016678     1.64   0.101    -.0053625    .0600861
+   hh_mother |   .0118103   .0315298     0.37   0.708    -.0500551    .0736757
+   ed_mother |    .023398   .0180783     1.29   0.196    -.0120739    .0588699
+   ed_father |   .0712562   .0170111     4.19   0.000     .0378783    .1046342
+     inc_low |  -.0237716   .0186703    -1.27   0.203    -.0604051    .0128619
+    inc_high |  -.0015659   .0158635    -0.10   0.921     -.032692    .0295603
+    math_irt |   .0014633   .0008137     1.80   0.072    -.0001333      .00306
+    read_irt |   .0052492   .0011072     4.74   0.000     .0030768    .0074217
+   frqabsent |  -.0180425   .0297386    -0.61   0.544    -.0763933    .0403083
+    handicap |   .0392875   .0542827     0.72   0.469    -.0672218    .1457968
+        enr2 |  -.0068899   .0265939    -0.26   0.796    -.0590705    .0452907
+        enr3 |  -.0513795    .029368    -1.75   0.080    -.1090032    .0062442
+        enr4 |  -.0415505   .0302123    -1.38   0.169    -.1008307    .0177296
+        enr5 |  -.0513613   .0277818    -1.85   0.065    -.1058726    .0031501
+        enr6 |  -.0072855   .0284207    -0.26   0.798    -.0630504    .0484794
+        enr7 |  -.0029538   .0311501    -0.09   0.924    -.0640742    .0581666
+        enr8 |  -.0493528   .0346271    -1.43   0.154    -.1172955    .0185899
+        enr9 |  -.0563166   .0368986    -1.53   0.127    -.1287162     .016083
+cont_catho~c |   .0177476   .0291373     0.61   0.543    -.0394234    .0749186
+cont_relig~s |  -.0037107   .0517872    -0.07   0.943    -.1053235    .0979021
+cont_private |   .0497879   .0339188     1.47   0.142     -.016765    .1163408
+      urban2 |   .0062214   .0179367     0.35   0.729    -.0289726    .0414153
+      urban3 |   .0134281   .0211375     0.64   0.525    -.0280463    .0549026
+      urban4 |  -.0387013   .1645812    -0.24   0.814      -.36163    .2842273
+       _cons |   .5206062   .0752882     6.91   0.000     .3728815    .6683309
+------------------------------------------------------------------------------
+
+. 
+. rcr voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, c
+> lust(F1SCH_ID) lambda(-1 0)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309256   .0843726    27.37   0.000     2.143889    2.474623
+    betaxInf |   .1680256    .037942     4.43   0.000     .0936608    .2423905
+     lambda0 |   .1829377   .1162438     1.57   0.116     -.044896    .4107713
+      betaxL |   .1680256   731796.4     0.00   1.000     -1434294     1434295
+      betaxH |   .1680256   731796.4     0.00   1.000     -1434294     1434295
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      -1434294     1434295
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, c
+> lust(F1SCH_ID) lambda(0 .5)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309256   .0843726    27.37   0.000     2.143889    2.474623
+    betaxInf |   .1680256    .037942     4.43   0.000     .0936608    .2423905
+     lambda0 |   .1829377   .1162438     1.57   0.116     -.044896    .4107713
+      betaxL |          0   .0168875     0.00   1.000    -.0330989    .0330989
+      betaxH |   .1680256   731796.4     0.00   1.000     -1434294     1434295
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0330989     1434295
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if female, c
+> lust(F1SCH_ID)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.309256   .0843726    27.37   0.000     2.143889    2.474623
+    betaxInf |   .1680256    .037942     4.43   0.000     .0936608    .2423905
+     lambda0 |   .1829377   .1162438     1.57   0.116     -.044896    .4107713
+      betaxL |          0   .0168875     0.00   1.000    -.0330989    .0330989
+      betaxH |   .1680256   731796.4     0.00   1.000     -1434294     1434295
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0330989     1434295
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. reg voter sport blackSport if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F(  2,  1080) =   10.70
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0055
+                                                       Root MSE      =  .45736
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0754446   .0163313     4.62   0.000     .0433999    .1074893
+  blackSport |  -.0239188   .0306087    -0.78   0.435    -.0839781    .0361406
+       _cons |   .6476267   .0146928    44.08   0.000     .6187971    .6764563
+------------------------------------------------------------------------------
+
+. 
+. reg voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, rob
+>  clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F( 33,  1080) =    9.33
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0685
+                                                       Root MSE      =  .44426
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       sport |   .0542665    .016258     3.34   0.001     .0223656    .0861675
+  blackSport |  -.0358473   .0581893    -0.62   0.538    -.1500242    .0783296
+        by73 |   .0639566   .0445585     1.44   0.151    -.0234744    .1513875
+        by74 |   .0916396   .0433011     2.12   0.035     .0066758    .1766034
+        by75 |  -.0474497    .092118    -0.52   0.607    -.2282001    .1333008
+ race_native |  -.0358601   .0724524    -0.49   0.621    -.1780236    .1063034
+  race_black |   .0599951    .050933     1.18   0.239    -.0399438    .1599339
+   race_hisp |  -.0748114    .026156    -2.86   0.004    -.1261337   -.0234892
+    race_api |  -.2362468   .0303001    -7.80   0.000    -.2957005    -.176793
+   hh_father |    .021332   .0179717     1.19   0.235    -.0139315    .0565954
+   hh_mother |   .0168168    .030831     0.55   0.586    -.0436787    .0773122
+   ed_mother |   .0639459   .0180876     3.54   0.000     .0284552    .0994367
+   ed_father |  -.0011688   .0190267    -0.06   0.951    -.0385023    .0361646
+     inc_low |  -.0804252   .0213747    -3.76   0.000    -.1223659   -.0384845
+    inc_high |   .0051378   .0162863     0.32   0.752    -.0268186    .0370943
+    math_irt |   .0018414   .0008671     2.12   0.034     .0001399    .0035428
+    read_irt |   .0036821   .0011642     3.16   0.002     .0013978    .0059664
+   frqabsent |   .0327601   .0341913     0.96   0.338    -.0343287     .099849
+    handicap |  -.0057347    .053563    -0.11   0.915     -.110834    .0993646
+        enr2 |  -.0357388   .0305848    -1.17   0.243    -.0957512    .0242736
+        enr3 |  -.0515312   .0304842    -1.69   0.091    -.1113462    .0082837
+        enr4 |  -.0334114    .028928    -1.15   0.248    -.0901729      .02335
+        enr5 |  -.0483385   .0308883    -1.56   0.118    -.1089464    .0122694
+        enr6 |  -.0401723   .0310786    -1.29   0.196    -.1011537     .020809
+        enr7 |  -.0193149   .0335883    -0.58   0.565    -.0852206    .0465907
+        enr8 |  -.0498654   .0425091    -1.17   0.241    -.1332753    .0335444
+        enr9 |   -.102634    .045454    -2.26   0.024    -.1918222   -.0134458
+cont_catho~c |   .0132717   .0286361     0.46   0.643     -.042917    .0694604
+cont_relig~s |  -.0232526   .0558833    -0.42   0.677    -.1329048    .0863995
+cont_private |   .0178482   .0361333     0.49   0.621    -.0530512    .0887476
+      urban2 |  -.0330426   .0207395    -1.59   0.111     -.073737    .0076517
+      urban3 |  -.0152188   .0257772    -0.59   0.555    -.0657978    .0353603
+      urban4 |  -.0237768   .0699282    -0.34   0.734    -.1609873    .1134338
+       _cons |   .4509995   .0653704     6.90   0.000     .3227321    .5792668
+------------------------------------------------------------------------------
+
+. 
+. rcr voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, clu
+> st(F1SCH_ID) lambda(-1 0)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |   .2211838   .0599512     3.69   0.000     .1036816    .3386861
+     lambda0 |   .4990155   .1945752     2.56   0.010     .1176552    .8803758
+      betaxL |   .2211838   146770.4     0.00   1.000    -287664.4    287664.9
+      betaxH |   .2211838   146770.4     0.00   1.000    -287664.4    287664.9
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -287664.4    287664.9
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, clu
+> st(F1SCH_ID) lambda(0 .5)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |   .2211838   .0599512     3.69   0.000     .1036816    .3386861
+     lambda0 |   .4990155   .1945752     2.56   0.010     .1176552    .8803758
+      betaxL |          0   .0273849     0.00   1.000    -.0536734    .0536734
+      betaxH |   .2211838   146770.4     0.00   1.000    -287664.4    287664.9
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0536734    287664.9
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. rcr voter sport blackSport by73-by75 race_native race_black race_hisp race_ap
+> i hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 
+> cont_catholic cont_religious cont_private urban2 urban3 urban4   if male, clu
+> st(F1SCH_ID)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   2.766709   .1131717    24.45   0.000     2.544896    2.988521
+    betaxInf |   .2211838   .0599512     3.69   0.000     .1036816    .3386861
+     lambda0 |   .4990155   .1945752     2.56   0.010     .1176552    .8803758
+      betaxL |          0   .0273849     0.00   1.000    -.0536734    .0536734
+      betaxH |   .2211838   146770.4     0.00   1.000    -287664.4    287664.9
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0536734    287664.9
+------------------------------------------------------------------------------
+Treatment Variable:   sport
+Control Variables :   blackSport by73 by74 by75 race_native race_black
+                      race_hisp race_api hh_father hh_mother ed_mother
+                      ed_father inc_low inc_high math_irt read_irt frqabsent
+                      handicap enr2 enr3 enr4 enr5 enr6 enr7 enr8 enr9
+                      cont_catholic cont_religious cont_private urban2 urban3
+                      urban4
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /hpchome/econ/tmr17/HSsports/NELS88analysis/NELS88reg05_hetblack.l
+> og
+  log type:  text
+ closed on:   3 Oct 2017, 07:45:52
+-------------------------------------------------------------------------------

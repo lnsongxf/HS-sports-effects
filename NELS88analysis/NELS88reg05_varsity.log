@@ -1,0 +1,3011 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /hpchome/econ/tmr17/HSsports/NELS88analysis/NELS88reg05_varsity.lo
+> g
+  log type:  text
+ opened on:   3 Oct 2017, 07:34:18
+
+. 
+. /* Increase memory size to allow for dataset */
+. 
+. set maxvar 10000
+
+
+. 
+. /* Open Stata dataset */
+. use NELS88regdata4.dta
+
+. gen by72 = BIRTHYR==1972
+
+. gen race_other = race_native==1 | race_api==1
+
+. gen tot_irt = math_irt + read_irt
+
+. 
+. 
+. preserve
+
+.     ren varsity athlete
+
+.     drop race_native race_api
+
+.     gen loginc = log(inc99)
+(1033 missing values generated)
+
+.     drop if female
+(4742 observations deleted)
+
+.     *===================================================
+.     * Summary statistics for descriptive stats tables
+.     *===================================================
+. 
+.     foreach var of varlist by* race_* hh_* ed_* inc_* frqabsent handicap enr?
+>  cont_* urban? college_grad post_second loginc workft fit_active binge_drink 
+> voter {
+  2.         gen `var'_100 = 100*`var'
+  3.     }
+(31 missing values generated)
+(363 missing values generated)
+(3 missing values generated)
+(14 missing values generated)
+
+. 
+.     qui clonevar tempirt = tot_irt
+
+.     qui clonevar temploginc   = loginc
+
+.     qui replace  temploginc   = . if mi(loginc)
+
+. 
+.     qui ds *_100
+
+.     local discretevars `r(varlist)'
+
+. 
+.     local contvars tempirt temploginc
+
+. 
+.     lab var race_white_100         "White"
+
+.     lab var race_black_100         "Black"
+
+.     lab var race_hisp_100          "Hispanic"
+
+.     lab var race_other_100         "Other"
+
+.     lab var ed_mother_100          "Mother: college degree or higher"
+
+.     lab var ed_father_100          "Father: college degree or higher"
+
+.     lab var hh_mother_100          "Coresidence with Mother"
+
+.     lab var hh_father_100          "Coresidence with Father"
+
+.     lab var inc_high_100           "Family income > 50k"
+
+.     lab var inc_low_100            "Family income < 20k"
+
+.     lab var by72_100               "Born in 1972"
+
+.     lab var by73_100               "Born in 1973"
+
+.     lab var by74_100               "Born in 1974"
+
+.     lab var by75_100               "Born in 1975"
+
+.     lab var frqabsent_100           "Frequently absent"
+
+.     lab var handicap_100           "Has handicap"
+
+.     lab var enr1_100               "School size decile 1"
+
+.     lab var enr2_100               "School size decile 2"
+
+.     lab var enr3_100               "School size decile 3"
+
+.     lab var enr4_100               "School size decile 4"
+
+.     lab var enr5_100               "School size decile 5"
+
+.     lab var enr6_100               "School size decile 6"
+
+.     lab var enr7_100               "School size decile 7"
+
+.     lab var enr8_100               "School size decile 8"
+
+.     lab var enr9_100               "School size decile 9"
+
+.     lab var cont_public_100        "Public school"
+
+.     lab var cont_catholic_100      "Catholic school"
+
+.     lab var cont_religious_100     "Non-Catholic religious school"
+
+.     lab var cont_private_100       "Non-religious private school"
+
+.     lab var urban1_100              "Urbanicity quintile 1"
+
+.     lab var urban2_100              "Urbanicity quintile 2"
+
+.     lab var urban3_100              "Urbanicity quintile 3"
+
+.     lab var urban4_100              "Urbanicity quintile 4"
+
+.     lab var urban5_100              "Urbanicity quintile 5"
+
+.     lab var post_second_100        "Attended college"
+
+.     lab var college_grad_100       "Graduated 4-year college"
+
+.     lab var workft_100             "Employed full-time"
+
+.     lab var binge_drink_100        "Alcohol abuse"
+
+.     lab var voter_100              "Voter"
+
+.     lab var fit_active_100         "Regular exercise"
+
+.     capture lab var tempirt        "Colmbined IRT score"
+
+.     capture lab var temploginc     "Log income"
+
+. 
+.     *-----------------------------------------
+.     * Create summary stats tables
+.     *-----------------------------------------
+.     qui ds tempirt race_white_100 race_black_100 race_hisp_100 race_other_100
+>  ed_mother_100 ed_father_100 inc_low_100 inc_high_100 hh_mother_100 hh_father
+> _100 by72_100 by73_100 by74_100 by75_100 frqabsent_100 handicap_100 enr1_100 
+> enr2_100 enr3_100 enr4_100 enr5_100 enr6_100 enr7_100 enr8_100 enr9_100 cont_
+> public_100 cont_catholic_100 cont_religious_100 cont_private_100 urban1_100 u
+> rban2_100 urban3_100 urban4_100 urban5_100 post_second_100 college_grad_100 t
+> emploginc workft_100 fit_active_100 binge_drink_100 voter_100
+
+.     local allvars `r(varlist)'
+
+. 
+.     qui gen holderOverall      = ""
+
+.     qui gen holderOverallPflag = 0
+
+.     qui gen holderAthlete0     = ""
+
+.     qui gen holderAthlete1     = ""
+
+.     qui gen holderName         = ""
+
+.     qui gen fmtInd             = 0
+
+.     local i = 1
+
+.     foreach var in `allvars' {
+  2.         local test = 0
+  3.         foreach var2 in `discretevars' {
+  4.             if "`var'"=="`var2'" {
+  5.                 local test = 1
+  6.                 continue, break
+  7.             }
+  8.         }
+  9.         if "`test'"=="1" {
+ 10.             di "`var'"
+ 11.             local varlab: variable label `var'
+ 12.             qui replace holderName = "`varlab'" if _n==`i'
+ 13.             qui replace fmtInd     = 1          if _n==`i'
+ 14.             qui sum `var' , d
+ 15.             local temp: di %3.2f `r(mean)'
+ 16.             qui replace holderOverall = "`temp'" if _n==`i'
+ 17.             qui ttest `var' , by(athlete)
+ 18.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 19.             foreach a in 0 1 {
+ 20.                 qui sum `var'  if athlete==`a', d
+ 21.                 local temp: di %3.2f `r(mean)'
+ 22.                 qui replace holderAthlete`a' = "`temp'" if _n==`i'
+ 23.             }
+ 24.             local i = `=`i'+1'
+ 25.         }
+ 26.         else {
+ 27.             di "`var'"
+ 28.             local varlab: variable label `var'
+ 29.             qui replace holderName = "`varlab'" if _n==`i'
+ 30.             qui replace fmtInd     = 1          if _n==`i'
+ 31.             qui sum `var' , d
+ 32.             local temp1: di %3.2f `r(mean)'
+ 33.             local temp2: di %3.2f `r(sd)'
+ 34.             qui replace holderOverall = "`temp1'"   if _n==`i'
+ 35.             qui replace holderOverall = "(`temp2')" if _n==`=`i'+1'
+ 36.             qui ttest `var' , by(athlete)
+ 37.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 38.             foreach a in 0 1 {
+ 39.                 qui sum `var' if athlete==`a', d
+ 40.                 local temp1: di %3.2f `r(mean)'
+ 41.                 local temp2: di %3.2f `r(sd)'
+ 42.                 qui replace holderAthlete`a' = "`temp1'"   if _n==`i'
+ 43.                 qui replace holderAthlete`a' = "(`temp2')" if _n==`=`i'+1'
+ 44.             }
+ 45.             local i = `=`i'+2'
+ 46.         }
+ 47.         * Sample Sizes
+.         qui replace holderName = "N" if _n==`i'
+ 48.         qui count 
+ 49.         local tempN: di %9.0fc `r(N)'
+ 50.         qui replace holderOverall = "`tempN'" if _n==`i'
+ 51.         foreach a in 0 1 {
+ 52.             qui count if athlete==`a'
+ 53.             local tempN: di %9.0fc `r(N)'
+ 54.             qui replace holderAthlete`a' = "`tempN'" if _n==`i'
+ 55.         }
+ 56.     }
+tempirt
+race_white_100
+race_black_100
+race_hisp_100
+race_other_100
+ed_mother_100
+ed_father_100
+inc_low_100
+inc_high_100
+hh_mother_100
+hh_father_100
+by72_100
+by73_100
+by74_100
+by75_100
+frqabsent_100
+handicap_100
+enr1_100
+enr2_100
+enr3_100
+enr4_100
+enr5_100
+enr6_100
+enr7_100
+enr8_100
+enr9_100
+cont_public_100
+cont_catholic_100
+cont_religious_100
+cont_private_100
+urban1_100
+urban2_100
+urban3_100
+urban4_100
+urban5_100
+post_second_100
+college_grad_100
+temploginc
+workft_100
+fit_active_100
+binge_drink_100
+voter_100
+
+. 
+.     * Add asterisk if athletes are significantly different from non-athletes
+.     replace holderAthlete1 = "$"+holderAthlete1+"^{\ast}$" if holderOverallPf
+> lag==1
+holderAthlete1 was str9 now str14
+(22 real changes made)
+
+. 
+.     qui listtex holderName holderAthlete0 holderAthlete1 holderOverall in 1/`
+> =`i'' using sumStatsTableVarsity.tex, replace delimiter(" & ") end ("   \tabu
+> larnewline")
+
+. 
+.     drop *_100
+
+. restore
+
+. 
+. preserve
+
+.     ren sport athlete
+
+.     drop race_native race_api
+
+.     gen loginc = log(inc99)
+(1033 missing values generated)
+
+.     drop if !female
+(4227 observations deleted)
+
+.     *===================================================
+.     * Summary statistics for descriptive stats tables
+.     *===================================================
+. 
+.     foreach var of varlist by* race_* hh_* ed_* inc_* frqabsent handicap enr?
+>  cont_* urban? college_grad post_second loginc workft fit_active binge_drink 
+> voter {
+  2.         gen `var'_100 = 100*`var'
+  3.     }
+(37 missing values generated)
+(670 missing values generated)
+(1 missing value generated)
+(2 missing values generated)
+(11 missing values generated)
+
+. 
+.     qui clonevar tempirt = tot_irt
+
+.     qui clonevar temploginc   = loginc
+
+.     qui replace  temploginc   = . if mi(loginc)
+
+. 
+.     qui ds *_100
+
+.     local discretevars `r(varlist)'
+
+. 
+.     local contvars tempirt temploginc
+
+. 
+.     lab var race_white_100         "White"
+
+.     lab var race_black_100         "Black"
+
+.     lab var race_hisp_100          "Hispanic"
+
+.     lab var race_other_100         "Other"
+
+.     lab var ed_mother_100          "Mother: college degree or higher"
+
+.     lab var ed_father_100          "Father: college degree or higher"
+
+.     lab var hh_mother_100          "Coresidence with Mother"
+
+.     lab var hh_father_100          "Coresidence with Father"
+
+.     lab var inc_high_100           "Family income > 50k"
+
+.     lab var inc_low_100            "Family income < 20k"
+
+.     lab var by72_100               "Born in 1972"
+
+.     lab var by73_100               "Born in 1973"
+
+.     lab var by74_100               "Born in 1974"
+
+.     lab var by75_100               "Born in 1975"
+
+.     lab var frqabsent_100           "Frequently absent"
+
+.     lab var handicap_100           "Has handicap"
+
+.     lab var enr1_100               "School size decile 1"
+
+.     lab var enr2_100               "School size decile 2"
+
+.     lab var enr3_100               "School size decile 3"
+
+.     lab var enr4_100               "School size decile 4"
+
+.     lab var enr5_100               "School size decile 5"
+
+.     lab var enr6_100               "School size decile 6"
+
+.     lab var enr7_100               "School size decile 7"
+
+.     lab var enr8_100               "School size decile 8"
+
+.     lab var enr9_100               "School size decile 9"
+
+.     lab var cont_public_100        "Public school"
+
+.     lab var cont_catholic_100      "Catholic school"
+
+.     lab var cont_religious_100     "Non-Catholic religious school"
+
+.     lab var cont_private_100       "Non-religious private school"
+
+.     lab var urban1_100              "Urbanicity quintile 1"
+
+.     lab var urban2_100              "Urbanicity quintile 2"
+
+.     lab var urban3_100              "Urbanicity quintile 3"
+
+.     lab var urban4_100              "Urbanicity quintile 4"
+
+.     lab var urban5_100              "Urbanicity quintile 5"
+
+.     lab var post_second_100        "Attended college"
+
+.     lab var college_grad_100       "Graduated 4-year college"
+
+.     lab var workft_100             "Employed full-time"
+
+.     lab var binge_drink_100        "Alcohol abuse"
+
+.     lab var voter_100              "Voter"
+
+.     lab var fit_active_100         "Regular exercise"
+
+.     capture lab var tempirt        "Colmbined IRT score"
+
+.     capture lab var temploginc     "Log income"
+
+. 
+.     *-----------------------------------------
+.     * Create summary stats tables
+.     *-----------------------------------------
+.     qui ds tempirt race_white_100 race_black_100 race_hisp_100 race_other_100
+>  ed_mother_100 ed_father_100 inc_low_100 inc_high_100 hh_mother_100 hh_father
+> _100 by72_100 by73_100 by74_100 by75_100 frqabsent_100 handicap_100 enr1_100 
+> enr2_100 enr3_100 enr4_100 enr5_100 enr6_100 enr7_100 enr8_100 enr9_100 cont_
+> public_100 cont_catholic_100 cont_religious_100 cont_private_100 urban1_100 u
+> rban2_100 urban3_100 urban4_100 urban5_100 post_second_100 college_grad_100 t
+> emploginc workft_100 fit_active_100 binge_drink_100 voter_100
+
+.     local allvars `r(varlist)'
+
+. 
+.     qui gen holderOverall      = ""
+
+.     qui gen holderOverallPflag = 0
+
+.     qui gen holderAthlete0     = ""
+
+.     qui gen holderAthlete1     = ""
+
+.     qui gen holderName         = ""
+
+.     qui gen fmtInd             = 0
+
+.     local i = 1
+
+.     foreach var in `allvars' {
+  2.         local test = 0
+  3.         foreach var2 in `discretevars' {
+  4.             if "`var'"=="`var2'" {
+  5.                 local test = 1
+  6.                 continue, break
+  7.             }
+  8.         }
+  9.         if "`test'"=="1" {
+ 10.             di "`var'"
+ 11.             local varlab: variable label `var'
+ 12.             qui replace holderName = "`varlab'" if _n==`i'
+ 13.             qui replace fmtInd     = 1          if _n==`i'
+ 14.             qui sum `var' , d
+ 15.             local temp: di %3.2f `r(mean)'
+ 16.             qui replace holderOverall = "`temp'" if _n==`i'
+ 17.             qui ttest `var' , by(athlete)
+ 18.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 19.             foreach a in 0 1 {
+ 20.                 qui sum `var' if athlete==`a', d
+ 21.                 local temp: di %3.2f `r(mean)'
+ 22.                 qui replace holderAthlete`a' = "`temp'" if _n==`i'
+ 23.             }
+ 24.             local i = `=`i'+1'
+ 25.         }
+ 26.         else {
+ 27.             di "`var'"
+ 28.             local varlab: variable label `var'
+ 29.             qui replace holderName = "`varlab'" if _n==`i'
+ 30.             qui replace fmtInd     = 1          if _n==`i'
+ 31.             qui sum `var' , d
+ 32.             local temp1: di %3.2f `r(mean)'
+ 33.             local temp2: di %3.2f `r(sd)'
+ 34.             qui replace holderOverall = "`temp1'"   if _n==`i'
+ 35.             qui replace holderOverall = "(`temp2')" if _n==`=`i'+1'
+ 36.             qui ttest `var' , by(athlete)
+ 37.             qui replace holderOverallPflag = (`r(p)'<.05) if _n==`i'
+ 38.             foreach a in 0 1 {
+ 39.                 qui sum `var' if athlete==`a', d
+ 40.                 local temp1: di %3.2f `r(mean)'
+ 41.                 local temp2: di %3.2f `r(sd)'
+ 42.                 qui replace holderAthlete`a' = "`temp1'"   if _n==`i'
+ 43.                 qui replace holderAthlete`a' = "(`temp2')" if _n==`=`i'+1'
+ 44.             }
+ 45.             local i = `=`i'+2'
+ 46.         }
+ 47.         * Sample Sizes
+.         qui replace holderName = "N" if _n==`i'
+ 48.         qui count 
+ 49.         local tempN: di %9.0fc `r(N)'
+ 50.         qui replace holderOverall = "`tempN'" if _n==`i'
+ 51.         foreach a in 0 1 {
+ 52.             qui count if athlete==`a'
+ 53.             local tempN: di %9.0fc `r(N)'
+ 54.             qui replace holderAthlete`a' = "`tempN'" if _n==`i'
+ 55.         }
+ 56.     }
+tempirt
+race_white_100
+race_black_100
+race_hisp_100
+race_other_100
+ed_mother_100
+ed_father_100
+inc_low_100
+inc_high_100
+hh_mother_100
+hh_father_100
+by72_100
+by73_100
+by74_100
+by75_100
+frqabsent_100
+handicap_100
+enr1_100
+enr2_100
+enr3_100
+enr4_100
+enr5_100
+enr6_100
+enr7_100
+enr8_100
+enr9_100
+cont_public_100
+cont_catholic_100
+cont_religious_100
+cont_private_100
+urban1_100
+urban2_100
+urban3_100
+urban4_100
+urban5_100
+post_second_100
+college_grad_100
+temploginc
+workft_100
+fit_active_100
+binge_drink_100
+voter_100
+
+. 
+.     * Add asterisk if athletes are significantly different from non-athletes
+.     replace holderAthlete1 = "$"+holderAthlete1+"^{\ast}$" if holderOverallPf
+> lag==1
+holderAthlete1 was str9 now str14
+(29 real changes made)
+
+. 
+.     qui listtex holderName holderAthlete0 holderAthlete1 holderOverall in 1/`
+> =`i'' using sumStatsTableVarsityFemale.tex, replace delimiter(" & ") end ("  
+>  \tabularnewline")
+
+. 
+.     drop *_100
+
+. restore
+
+. 
+. 
+. 
+. 
+. xtset F1SCH_ID
+       panel variable:  F1SCH_ID (unbalanced)
+
+. 
+. /*  Higher Ed Analysis  */
+. 
+. reg college_grad varsity if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4705
+                                                       F(  1,  1100) =  146.52
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0338
+                                                       Root MSE      =  .48652
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .1858497   .0153539    12.10   0.000     .1557234     .215976
+       _cons |    .354417   .0105505    33.59   0.000     .3337156    .3751183
+------------------------------------------------------------------------------
+
+. 
+. reg college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if female, rob
+>  clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4705
+                                                       F( 32,  1100) =  118.26
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.3211
+                                                       Root MSE      =  .40918
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0916681   .0131981     6.95   0.000     .0657718    .1175643
+        by73 |   .0285844   .0374443     0.76   0.445    -.0448859    .1020548
+        by74 |   .0732246   .0374262     1.96   0.051    -.0002102    .1466594
+        by75 |   .0732475   .0603912     1.21   0.225    -.0452475    .1917425
+ race_native |  -.0873049    .051423    -1.70   0.090    -.1882032    .0135933
+  race_black |   .0768302    .021687     3.54   0.000     .0342777    .1193828
+   race_hisp |   -.050768   .0203179    -2.50   0.013    -.0906342   -.0109018
+    race_api |   .0978604   .0253565     3.86   0.000     .0481079    .1476129
+   hh_father |   .0877201   .0147549     5.95   0.000     .0587692    .1166709
+   hh_mother |   .0862407   .0288923     2.98   0.003     .0295504     .142931
+   ed_mother |   .0770473     .01822     4.23   0.000     .0412975    .1127972
+   ed_father |   .1248489   .0178232     7.00   0.000     .0898776    .1598203
+     inc_low |   .0037299   .0160344     0.23   0.816    -.0277316    .0351913
+    inc_high |   .0820059   .0164262     4.99   0.000     .0497757    .1142362
+    math_irt |   .0092248   .0007863    11.73   0.000      .007682    .0107675
+    read_irt |   .0098027   .0010498     9.34   0.000     .0077427    .0118626
+   frqabsent |    -.10881   .0234887    -4.63   0.000    -.1548978   -.0627222
+    handicap |   .0328065   .0461495     0.71   0.477    -.0577445    .1233576
+        enr2 |   .0312108   .0249054     1.25   0.210    -.0176567    .0800783
+        enr3 |   .0515976   .0238439     2.16   0.031     .0048129    .0983822
+        enr4 |   .0175229   .0261075     0.67   0.502    -.0337031     .068749
+        enr5 |   .0620776   .0245782     2.53   0.012     .0138522     .110303
+        enr6 |   .0495101   .0251688     1.97   0.049     .0001259    .0988943
+        enr7 |   .0603627   .0300357     2.01   0.045      .001429    .1192964
+        enr8 |   .0605184   .0333619     1.81   0.070    -.0049417    .1259785
+        enr9 |    .116946    .032112     3.64   0.000     .0539383    .1799537
+cont_catho~c |   .1238225   .0298669     4.15   0.000       .06522     .182425
+cont_relig~s |   .1041038   .0383275     2.72   0.007     .0289006     .179307
+cont_private |   .1131213   .0387843     2.92   0.004     .0370217    .1892208
+      urban2 |   .0196914   .0174238     1.13   0.259    -.0144962     .053879
+      urban3 |    .004595   .0217534     0.21   0.833    -.0380879    .0472779
+      urban4 |   .0820568   .0360216     2.28   0.023     .0113781    .1527356
+       _cons |  -.6018081   .0547221   -11.00   0.000    -.7091796   -.4944366
+------------------------------------------------------------------------------
+
+. 
+. rcr college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if female, clu
+> st(F1SCH_ID) lambda(-1 0)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4705
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.735251    .253382    14.74   0.000     3.238631     4.23187
+    betaxInf |   1.499881   .1287278    11.65   0.000     1.247579    1.752183
+     lambda0 |   .5761355   .1007037     5.72   0.000     .3787598    .7735112
+      betaxL |   .0916681   .0131531     6.97   0.000     .0658884    .1174477
+      betaxH |   .2370692   .0193747    12.24   0.000     .1990956    .2750429
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0658884    .2750429
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if female, clu
+> st(F1SCH_ID) lambda(0 .5)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4705
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.735251    .253382    14.74   0.000     3.238631     4.23187
+    betaxInf |   1.499881   .1287278    11.65   0.000     1.247579    1.752183
+     lambda0 |   .5761355   .1007037     5.72   0.000     .3787598    .7735112
+      betaxL |    .012583    .015952     0.79   0.430    -.0186824    .0438484
+      betaxH |   .0916681   .0131531     6.97   0.000     .0658884    .1174477
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0186824    .1174477
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if female, clu
+> st(F1SCH_ID)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4705
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.735251    .253382    14.74   0.000     3.238631     4.23187
+    betaxInf |   1.499881   .1287278    11.65   0.000     1.247579    1.752183
+     lambda0 |   .5761355   .1007037     5.72   0.000     .3787598    .7735112
+      betaxL |  -.0734665   .0227589    -3.23   0.001    -.1180731   -.0288599
+      betaxH |   .0916681   .0131531     6.97   0.000     .0658884    .1174477
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1180731    .1174477
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. reg college_grad varsity if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4196
+                                                       F(  1,  1080) =  128.16
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0289
+                                                       Root MSE      =  .47757
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .1679001   .0148313    11.32   0.000     .1387986    .1970016
+       _cons |   .2766333   .0123463    22.41   0.000     .2524079    .3008587
+------------------------------------------------------------------------------
+
+. 
+. reg college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if male, rob c
+> lust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4196
+                                                       F( 32,  1080) =   88.32
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.3195
+                                                       Root MSE      =  .40128
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |    .107292   .0127929     8.39   0.000     .0821902    .1323938
+        by73 |  -.0017598   .0288803    -0.06   0.951    -.0584278    .0549081
+        by74 |   .0295039   .0287381     1.03   0.305     -.026885    .0858928
+        by75 |   .1280991   .0644867     1.99   0.047     .0015656    .2546325
+ race_native |   -.143008   .0382414    -3.74   0.000     -.218044   -.0679721
+  race_black |   .0174259   .0258829     0.67   0.501    -.0333605    .0682123
+   race_hisp |  -.0303602   .0200867    -1.51   0.131    -.0697736    .0090532
+    race_api |   .0780439   .0294517     2.65   0.008      .020255    .1358329
+   hh_father |   .0640631   .0161387     3.97   0.000     .0323963      .09573
+   hh_mother |    .081222   .0236759     3.43   0.001      .034766     .127678
+   ed_mother |   .0639129   .0199211     3.21   0.001     .0248243    .1030014
+   ed_father |   .1453211   .0195476     7.43   0.000     .1069656    .1836766
+     inc_low |   -.034375    .016065    -2.14   0.033    -.0658971   -.0028529
+    inc_high |    .094712   .0170189     5.57   0.000     .0613183    .1281058
+    math_irt |   .0099339   .0008126    12.23   0.000     .0083395    .0115282
+    read_irt |    .004293   .0010666     4.03   0.000     .0022002    .0063858
+   frqabsent |   -.099893   .0255549    -3.91   0.000    -.1500359   -.0497502
+    handicap |  -.0603355   .0406252    -1.49   0.138    -.1400488    .0193778
+        enr2 |    .002323   .0246273     0.09   0.925    -.0459998    .0506458
+        enr3 |   .0378864   .0269175     1.41   0.160    -.0149301    .0907028
+        enr4 |   .0239071   .0267464     0.89   0.372    -.0285737     .076388
+        enr5 |  -.0215777   .0281245    -0.77   0.443    -.0767626    .0336071
+        enr6 |   .0086325   .0266198     0.32   0.746    -.0435998    .0608649
+        enr7 |  -.0003822   .0318021    -0.01   0.990    -.0627831    .0620186
+        enr8 |  -.0024426   .0387377    -0.06   0.950    -.0784522    .0735671
+        enr9 |   .0158575     .03657     0.43   0.665    -.0558988    .0876138
+cont_catho~c |   .1545802   .0325972     4.74   0.000     .0906192    .2185412
+cont_relig~s |   .0652904   .0515491     1.27   0.206    -.0358574    .1664382
+cont_private |   .1489924   .0357136     4.17   0.000     .0789165    .2190683
+      urban2 |  -.0205122   .0193182    -1.06   0.289    -.0584177    .0173934
+      urban3 |  -.0298684   .0229276    -1.30   0.193    -.0748561    .0151192
+      urban4 |  -.1360451   .1844485    -0.74   0.461     -.497963    .2258729
+       _cons |  -.4308345   .0508993    -8.46   0.000    -.5307072   -.3309619
+------------------------------------------------------------------------------
+
+. 
+. rcr college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust
+> (F1SCH_ID) lambda(-1 0)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4196
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.012112   .2718939    14.76   0.000      3.47921    4.545014
+    betaxInf |   1.143512   .1602195     7.14   0.000     .8294873    1.457536
+     lambda0 |   1.008453   .1934852     5.21   0.000      .629229    1.387677
+      betaxL |    .107292    .012744     8.42   0.000     .0823141    .1322698
+      betaxH |   .1987719    .018283    10.87   0.000     .1629379     .234606
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0823141     .234606
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust
+> (F1SCH_ID) lambda(0 .5)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4196
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.012112   .2718939    14.76   0.000      3.47921    4.545014
+    betaxInf |   1.143512   .1602195     7.14   0.000     .8294873    1.457536
+     lambda0 |   1.008453   .1934852     5.21   0.000      .629229    1.387677
+      betaxL |   .0564089   .0158386     3.56   0.000     .0253658    .0874521
+      betaxH |    .107292    .012744     8.42   0.000     .0823141    .1322698
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0253658    .1322698
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr college_grad varsity by73-by75 race_native race_black race_hisp race_api 
+> hh_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 co
+> nt_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust
+> (F1SCH_ID)
+(68 missing values generated)
+(68 missing values generated)
+
+
+RCR model                                             Number of obs =     4196
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+college_grad |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.012112   .2718939    14.76   0.000      3.47921    4.545014
+    betaxInf |   1.143512   .1602195     7.14   0.000     .8294873    1.457536
+     lambda0 |   1.008453   .1934852     5.21   0.000      .629229    1.387677
+      betaxL |   .0009831   .0223894     0.04   0.965    -.0428992    .0448655
+      betaxH |    .107292    .012744     8.42   0.000     .0823141    .1322698
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0428992    .1322698
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. 
+. /*  Attend post-secondary education */
+. 
+. reg post_second varsity if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F(  1,  1100) =   40.69
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0080
+                                                       Root MSE      =  .32518
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0596881   .0093571     6.38   0.000     .0413283     .078048
+       _cons |   .8549912   .0073082   116.99   0.000     .8406516    .8693309
+------------------------------------------------------------------------------
+
+. 
+. reg post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, rob 
+> clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F( 32,  1100) =   17.15
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1263
+                                                       Root MSE      =  .30619
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0283835   .0091477     3.10   0.002     .0104346    .0463325
+        by73 |   .1198849    .059542     2.01   0.044     .0030563    .2367136
+        by74 |   .1387168   .0587287     2.36   0.018     .0234838    .2539498
+        by75 |   .1473247   .0633798     2.32   0.020     .0229658    .2716836
+ race_native |  -.0473358    .064328    -0.74   0.462    -.1735552    .0788836
+  race_black |   .0617472   .0174845     3.53   0.000     .0274404     .096054
+   race_hisp |    .024403    .017672     1.38   0.168    -.0102716    .0590777
+    race_api |   .0381157     .01308     2.91   0.004     .0124512    .0637802
+   hh_father |   .0027304   .0122613     0.22   0.824    -.0213278    .0267886
+   hh_mother |  -.0167553   .0213789    -0.78   0.433    -.0587033    .0251927
+   ed_mother |   .0150141   .0090714     1.66   0.098    -.0027851    .0328134
+   ed_father |   .0364953   .0089321     4.09   0.000     .0189694    .0540211
+     inc_low |  -.0808849   .0153506    -5.27   0.000    -.1110046   -.0507652
+    inc_high |   .0095337   .0096174     0.99   0.322    -.0093368    .0284042
+    math_irt |    .003581   .0005262     6.80   0.000     .0025484    .0046135
+    read_irt |   .0045493   .0007645     5.95   0.000     .0030493    .0060492
+   frqabsent |  -.0572615   .0236911    -2.42   0.016    -.1037463   -.0107767
+    handicap |  -.1412457   .0542543    -2.60   0.009    -.2476994    -.034792
+        enr2 |  -.0261936   .0213029    -1.23   0.219    -.0679925    .0156054
+        enr3 |  -.0077286   .0196401    -0.39   0.694    -.0462648    .0308077
+        enr4 |   .0117385   .0201716     0.58   0.561    -.0278405    .0513176
+        enr5 |   .0046618   .0206772     0.23   0.822    -.0359094    .0452331
+        enr6 |   -.007334   .0207158    -0.35   0.723    -.0479809    .0333129
+        enr7 |  -.0152457   .0216384    -0.70   0.481    -.0577029    .0272116
+        enr8 |   .0473299   .0242265     1.95   0.051    -.0002054    .0948652
+        enr9 |   .0492961   .0233408     2.11   0.035     .0034986    .0950936
+cont_catho~c |   .0441426   .0157489     2.80   0.005     .0132413    .0750438
+cont_relig~s |   .0323627    .023043     1.40   0.160    -.0128504    .0775759
+cont_private |  -.0023738   .0192426    -0.12   0.902    -.0401302    .0353825
+      urban2 |  -.0149722   .0112685    -1.33   0.184    -.0370824    .0071381
+      urban3 |  -.0239942    .015285    -1.57   0.117    -.0539852    .0059967
+      urban4 |   .1041127   .0201563     5.17   0.000     .0645635    .1436618
+       _cons |   .4861424   .0669704     7.26   0.000     .3547383    .6175465
+------------------------------------------------------------------------------
+
+. 
+. rcr post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, clus
+> t(F1SCH_ID) lambda(-1 0)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.754071   .2559418    14.67   0.000     3.252434    4.255708
+    betaxInf |   .5008657   .0610166     8.21   0.000     .3812754    .6204561
+     lambda0 |   .3013033   .1044188     2.89   0.004     .0966461    .5059604
+      betaxL |   .0283835   .0091168     3.11   0.002     .0105149    .0462521
+      betaxH |   .1075326   .0130893     8.22   0.000      .081878    .1331872
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0105149    .1331872
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, clus
+> t(F1SCH_ID) lambda(0 .5)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.754071   .2559418    14.67   0.000     3.252434    4.255708
+    betaxInf |   .5008657   .0610166     8.21   0.000     .3812754    .6204561
+     lambda0 |   .3013033   .1044188     2.89   0.004     .0966461    .5059604
+      betaxL |  -.0201073   .0117826    -1.71   0.088    -.0432008    .0029861
+      betaxH |   .0283835   .0091168     3.11   0.002     .0105149    .0462521
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0432008    .0462521
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, clus
+> t(F1SCH_ID)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.754071   .2559418    14.67   0.000     3.252434    4.255708
+    betaxInf |   .5008657   .0610166     8.21   0.000     .3812754    .6204561
+     lambda0 |   .3013033   .1044188     2.89   0.004     .0966461    .5059604
+      betaxL |  -.0764737   .0178305    -4.29   0.000    -.1114208   -.0415266
+      betaxH |   .0283835   .0091168     3.11   0.002     .0105149    .0462521
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1114208    .0462521
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. reg post_second varsity if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F(  1,  1080) =   39.75
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0113
+                                                       Root MSE      =  .36693
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0799116   .0126749     6.30   0.000     .0550413    .1047819
+       _cons |    .789965     .01108    71.30   0.000     .7682242    .8117058
+------------------------------------------------------------------------------
+
+. 
+. reg post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, rob cl
+> ust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F( 32,  1080) =   22.07
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.1619
+                                                       Root MSE      =  .33907
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0625326   .0118863     5.26   0.000     .0392097    .0858554
+        by73 |   .1611768    .045025     3.58   0.000     .0728304    .2495232
+        by74 |   .1970609   .0444579     4.43   0.000     .1098273    .2842946
+        by75 |   .1135151   .0695099     1.63   0.103    -.0228746    .2499049
+ race_native |  -.0147352   .0934659    -0.16   0.875    -.1981306    .1686603
+  race_black |   .0593907   .0235163     2.53   0.012     .0132478    .1055335
+   race_hisp |   .0915862   .0203627     4.50   0.000     .0516314    .1315411
+    race_api |   .0657339   .0183129     3.59   0.000      .029801    .1016668
+   hh_father |   .0162827   .0149124     1.09   0.275    -.0129778    .0455432
+   hh_mother |   .0546318   .0266217     2.05   0.040     .0023956     .106868
+   ed_mother |   .0371099    .011386     3.26   0.001     .0147688     .059451
+   ed_father |   .0445579   .0115322     3.86   0.000     .0219299    .0671859
+     inc_low |  -.0674731   .0186119    -3.63   0.000    -.1039927   -.0309535
+    inc_high |   .0168381   .0118595     1.42   0.156    -.0064322    .0401085
+    math_irt |   .0051152   .0006053     8.45   0.000     .0039276    .0063028
+    read_irt |   .0036106    .000811     4.45   0.000     .0020193    .0052019
+   frqabsent |  -.0748096   .0295868    -2.53   0.012    -.1328637   -.0167556
+    handicap |  -.0010351   .0413931    -0.03   0.980    -.0822552     .080185
+        enr2 |  -.0226335   .0243857    -0.93   0.354    -.0704823    .0252153
+        enr3 |  -.0136737   .0258361    -0.53   0.597    -.0643683    .0370209
+        enr4 |   .0072534    .025993     0.28   0.780    -.0437491    .0582558
+        enr5 |   .0130738   .0263192     0.50   0.619    -.0385688    .0647164
+        enr6 |   .0112085    .025653     0.44   0.662    -.0391269     .061544
+        enr7 |   .0386196   .0287249     1.34   0.179    -.0177435    .0949826
+        enr8 |   .0517455   .0321833     1.61   0.108    -.0114034    .1148945
+        enr9 |   .0503793   .0332996     1.51   0.131    -.0149599    .1157185
+cont_catho~c |    .101902   .0178155     5.72   0.000     .0669451    .1368588
+cont_relig~s |   .0194236   .0401651     0.48   0.629    -.0593868     .098234
+cont_private |    .024122   .0168511     1.43   0.153    -.0089426    .0571866
+      urban2 |   .0134494   .0146824     0.92   0.360    -.0153598    .0422587
+      urban3 |  -.0215685   .0193178    -1.12   0.264    -.0594731    .0163361
+      urban4 |   .0695313   .0578798     1.20   0.230    -.0440382    .1831009
+       _cons |    .208144   .0584851     3.56   0.000     .0933866    .3229013
+------------------------------------------------------------------------------
+
+. 
+. rcr post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(
+> F1SCH_ID) lambda(-1 0)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |   .3632522   .0941662     3.86   0.000     .1786899    .5478146
+     lambda0 |   1.203963   .3747107     3.21   0.001      .469544    1.938383
+      betaxL |   .0625326   .0118412     5.28   0.000     .0393242    .0857409
+      betaxH |   .1007741   .0162861     6.19   0.000      .068854    .1326942
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0393242    .1326942
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(
+> F1SCH_ID) lambda(0 .5)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |   .3632522   .0941662     3.86   0.000     .1786899    .5478146
+     lambda0 |   1.203963   .3747107     3.21   0.001      .469544    1.938383
+      betaxL |   .0392377   .0142253     2.76   0.006     .0113566    .0671187
+      betaxH |   .0625326   .0118412     5.28   0.000     .0393242    .0857409
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0113566    .0857409
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr post_second varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(
+> F1SCH_ID)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ post_second |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |   .3632522   .0941662     3.86   0.000     .1786899    .5478146
+     lambda0 |   1.203963   .3747107     3.21   0.001      .469544    1.938383
+      betaxL |   .0122717   .0201072     0.61   0.542    -.0271376     .051681
+      betaxH |   .0625326   .0118412     5.28   0.000     .0393242    .0857409
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0271376    .0857409
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. 
+. /*  Fitness Activity Analysis  */
+. 
+. reg fit_active varsity if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4740
+                                                       F(  1,  1100) =   47.64
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0096
+                                                       Root MSE      =  .48851
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |    .098413   .0142583     6.90   0.000     .0704365    .1263895
+       _cons |   .5564121    .009663    57.58   0.000     .5374521     .575372
+------------------------------------------------------------------------------
+
+. 
+. reg fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if female, rob c
+> lust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4740
+                                                       F( 32,  1100) =    5.45
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0341
+                                                       Root MSE      =  .48404
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0806685   .0146473     5.51   0.000     .0519288    .1094082
+        by73 |  -.0592674   .0664986    -0.89   0.373    -.1897458    .0712111
+        by74 |  -.0162701   .0645477    -0.25   0.801    -.1429207    .1103805
+        by75 |  -.0847504   .0939573    -0.90   0.367    -.2691062    .0996055
+ race_native |  -.0088745   .0659377    -0.13   0.893    -.1382524    .1205034
+  race_black |  -.1598222   .0278442    -5.74   0.000    -.2144559   -.1051885
+   race_hisp |  -.0482512   .0246188    -1.96   0.050    -.0965563    .0000539
+    race_api |  -.0854674   .0292269    -2.92   0.004    -.1428143   -.0281206
+   hh_father |   .0185301    .018165     1.02   0.308    -.0171118    .0541721
+   hh_mother |   .0141855   .0331585     0.43   0.669    -.0508757    .0792466
+   ed_mother |   .0231761   .0210665     1.10   0.272     -.018159    .0645112
+   ed_father |   .0382658   .0198631     1.93   0.054    -.0007081    .0772396
+     inc_low |  -.0302166    .019783    -1.53   0.127    -.0690332       .0086
+    inc_high |   .0139442   .0173929     0.80   0.423    -.0201827    .0480711
+    math_irt |   .0005853   .0008695     0.67   0.501    -.0011208    .0022914
+    read_irt |   .0005477   .0011944     0.46   0.647    -.0017959    .0028912
+   frqabsent |   .0075676   .0305816     0.25   0.805    -.0524372    .0675724
+    handicap |  -.0770705   .0583616    -1.32   0.187    -.1915832    .0374422
+        enr2 |    .047935     .02874     1.67   0.096    -.0084564    .1043263
+        enr3 |   .0531796   .0312203     1.70   0.089    -.0080785    .1144377
+        enr4 |   .0245576   .0307066     0.80   0.424    -.0356924    .0848077
+        enr5 |   .0650083   .0291385     2.23   0.026      .007835    .1221816
+        enr6 |   .0664942   .0299347     2.22   0.027     .0077587    .1252297
+        enr7 |   .0359995   .0330829     1.09   0.277    -.0289132    .1009121
+        enr8 |   .0290648   .0381285     0.76   0.446     -.045748    .1038775
+        enr9 |   .0245891   .0359402     0.68   0.494      -.04593    .0951082
+cont_catho~c |  -.0184223   .0330454    -0.56   0.577    -.0832615    .0464169
+cont_relig~s |  -.0026756   .0511069    -0.05   0.958    -.1029537    .0976024
+cont_private |   .0240359   .0389972     0.62   0.538    -.0524814    .1005532
+      urban2 |  -.0327464   .0195872    -1.67   0.095    -.0711788    .0056861
+      urban3 |  -.0293326   .0238616    -1.23   0.219    -.0761519    .0174868
+      urban4 |   .1938281   .1650808     1.17   0.241    -.1300807     .517737
+       _cons |   .5198136   .0785794     6.62   0.000     .3656312    .6739961
+------------------------------------------------------------------------------
+
+. 
+. rcr fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if female, clust
+> (F1SCH_ID) lambda(-1 0)
+(5 missing values generated)
+(5 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4740
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.759463   .2570084    14.63   0.000     3.255736    4.263191
+    betaxInf |   .3492061   .0655162     5.33   0.000     .2207967    .4776156
+     lambda0 |   .5542769   .1462788     3.79   0.000     .2675757    .8409781
+      betaxL |   .3492061   245976.9     0.00   1.000    -482105.5    482106.2
+      betaxH |   .3492061   245976.9     0.00   1.000    -482105.5    482106.2
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -482105.5    482106.2
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if female, clust
+> (F1SCH_ID) lambda(0 .5)
+(5 missing values generated)
+(5 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4740
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.759463   .2570084    14.63   0.000     3.255736    4.263191
+    betaxInf |   .3492061   .0655162     5.33   0.000     .2207967    .4776156
+     lambda0 |   .5542769   .1462788     3.79   0.000     .2675757    .8409781
+      betaxL |   .3492061   245976.9     0.00   1.000    -482105.5    482106.2
+      betaxH |   .3492061   245976.9     0.00   1.000    -482105.5    482106.2
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -482105.5    482106.2
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if female, clust
+> (F1SCH_ID)
+(5 missing values generated)
+(5 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4740
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.759463   .2570084    14.63   0.000     3.255736    4.263191
+    betaxInf |   .3492061   .0655162     5.33   0.000     .2207967    .4776156
+     lambda0 |   .5542769   .1462788     3.79   0.000     .2675757    .8409781
+      betaxL |          0   .0256847     0.00   1.000     -.050341     .050341
+      betaxH |   .3492061   245976.9     0.00   1.000    -482105.5    482106.2
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      -.050341    482106.2
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. reg fit_active varsity if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4224
+                                                       F(  1,  1080) =   75.24
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0194
+                                                       Root MSE      =  .47335
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .1356144   .0156346     8.67   0.000     .1049367    .1662921
+       _cons |   .5663355   .0120588    46.96   0.000     .5426742    .5899967
+------------------------------------------------------------------------------
+
+. 
+. reg fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if male, rob clu
+> st(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4224
+                                                       F( 32,  1080) =    4.83
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0334
+                                                       Root MSE      =  .47169
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .1427457   .0156541     9.12   0.000     .1120298    .1734616
+        by73 |    .006594   .0430769     0.15   0.878    -.0779299    .0911179
+        by74 |   .0174061   .0415934     0.42   0.676    -.0642069    .0990191
+        by75 |   .0698003   .0840802     0.83   0.407    -.0951787    .2347793
+ race_native |  -.0088766   .0928205    -0.10   0.924    -.1910056    .1732525
+  race_black |   .0068291   .0276084     0.25   0.805    -.0473431    .0610014
+   race_hisp |   .0151232   .0282011     0.54   0.592    -.0402119    .0704583
+    race_api |    .024918   .0282339     0.88   0.378    -.0304815    .0803175
+   hh_father |  -.0050169   .0190819    -0.26   0.793    -.0424588    .0324249
+   hh_mother |  -.0178527   .0282238    -0.63   0.527    -.0732324    .0375271
+   ed_mother |   .0250793   .0194923     1.29   0.199    -.0131677    .0633263
+   ed_father |   .0554427   .0191229     2.90   0.004     .0179205     .092965
+     inc_low |   .0293713   .0207495     1.42   0.157    -.0113427    .0700853
+    inc_high |   .0181472    .017097     1.06   0.289    -.0153999    .0516943
+    math_irt |  -.0022895   .0008617    -2.66   0.008    -.0039802   -.0005987
+    read_irt |   .0025636   .0011643     2.20   0.028     .0002791    .0048482
+   frqabsent |  -.0029528    .036345    -0.08   0.935    -.0742675     .068362
+    handicap |   .0630058   .0522691     1.21   0.228    -.0395546    .1655663
+        enr2 |   .0489164   .0309857     1.58   0.115    -.0118825    .1097153
+        enr3 |   .0235626   .0319059     0.74   0.460     -.039042    .0861672
+        enr4 |   .0906089   .0308555     2.94   0.003     .0300653    .1511525
+        enr5 |   .0331526   .0318775     1.04   0.299    -.0293963    .0957016
+        enr6 |   .0897104    .030905     2.90   0.004     .0290696    .1503511
+        enr7 |   .1037556   .0352566     2.94   0.003     .0345763    .1729348
+        enr8 |   .1003321   .0389118     2.58   0.010     .0239807    .1766835
+        enr9 |   .1089401   .0416938     2.61   0.009     .0271301    .1907501
+cont_catho~c |   .0422642   .0316727     1.33   0.182    -.0198828    .1044112
+cont_relig~s |  -.0056365   .0554869    -0.10   0.919    -.1145108    .1032379
+cont_private |  -.0285373   .0384473    -0.74   0.458    -.1039772    .0469025
+      urban2 |   .0014431   .0196409     0.07   0.941    -.0370956    .0399818
+      urban3 |   .0119762     .02423     0.49   0.621    -.0355671    .0595194
+      urban4 |   .0671488   .1820324     0.37   0.712    -.2900285    .4243261
+       _cons |   .4770674   .0635952     7.50   0.000     .3522833    .6018515
+------------------------------------------------------------------------------
+
+. 
+. rcr fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(F
+> 1SCH_ID) lambda(-1 0)
+(5 missing values generated)
+(5 missing values generated)
+
+
+RCR model                                             Number of obs =     4224
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.054944   .2764003    14.67   0.000     3.513209    4.596678
+    betaxInf |   .0183567   .0696975     0.26   0.792    -.1182479    .1549612
+     lambda0 |   14.76571   56.03979     0.26   0.792    -95.07025    124.6017
+      betaxL |   .1005071   .0267637     3.76   0.000     .0480513    .1529629
+      betaxH |   .1427457   .0155947     9.15   0.000     .1121807    .1733107
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0480513    .1733107
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(F
+> 1SCH_ID) lambda(0 .5)
+(5 missing values generated)
+(5 missing values generated)
+
+
+RCR model                                             Number of obs =     4224
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.054944   .2764003    14.67   0.000     3.513209    4.596678
+    betaxInf |   .0183567   .0696975     0.26   0.792    -.1182479    .1549612
+     lambda0 |   14.76571   56.03979     0.26   0.792    -95.07025    124.6017
+      betaxL |   .1427457   .0155947     9.15   0.000     .1121807    .1733107
+      betaxH |   .1833427   .0275062     6.67   0.000     .1294315    .2372539
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .1121807    .2372539
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. preserve
+
+. rcr fit_active varsity by73-by75 race_native race_black race_hisp race_api hh
+> _* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont
+> _catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(F
+> 1SCH_ID) details
+(5 missing values generated)
+(5 missing values generated)
+
+
+RCR model                                             Number of obs =     4224
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+  fit_active |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.054944   .2764003    14.67   0.000     3.513209    4.596678
+    betaxInf |   .0183567   .0696975     0.26   0.792    -.1182479    .1549612
+     lambda0 |   14.76571   56.03979     0.26   0.792    -95.07025    124.6017
+      betaxL |   .1427457   .0155947     9.15   0.000     .1121807    .1733107
+      betaxH |    .252587   .0538983     4.69   0.000     .1469483    .3582258
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .1121807    .3582258
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. rcrplot, xrange(-.4 .4) yrange(-5 5)
+
+. 
+. graph export NELSmaleFitRCRplot.eps, replace
+(file NELSmaleFitRCRplot.eps written in EPS format)
+
+. restore
+
+. 
+. 
+. /*  Binge Drinking Analysis  */
+. 
+. reg binge_drink varsity if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4731
+                                                       F(  1,  1097) =   17.24
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0041
+                                                       Root MSE      =  .36593
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0481266   .0115913     4.15   0.000      .025383    .0708702
+       _cons |   .1409043   .0069788    20.19   0.000     .1272111    .1545975
+------------------------------------------------------------------------------
+
+. 
+. reg binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, rob 
+> clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4731
+                                                       F( 32,  1097) =    4.18
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0228
+                                                       Root MSE      =  .36369
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0399377   .0116926     3.42   0.001     .0169954      .06288
+        by73 |   .0320984   .0351024     0.91   0.361    -.0367771    .1009739
+        by74 |   .0590303   .0346491     1.70   0.089    -.0089557    .1270163
+        by75 |      .1141   .0654788     1.74   0.082    -.0143778    .2425778
+ race_native |   -.017227   .0509281    -0.34   0.735    -.1171544    .0827004
+  race_black |  -.1120551   .0152713    -7.34   0.000    -.1420194   -.0820908
+   race_hisp |  -.0306629   .0195386    -1.57   0.117    -.0690002    .0076744
+    race_api |  -.0935869   .0193213    -4.84   0.000    -.1314978    -.055676
+   hh_father |  -.0030487   .0128624    -0.24   0.813    -.0282864     .022189
+   hh_mother |  -.0022628   .0238291    -0.09   0.924    -.0490186    .0444929
+   ed_mother |   .0190141   .0160516     1.18   0.236    -.0124812    .0505095
+   ed_father |  -.0109772   .0147711    -0.74   0.458      -.03996    .0180056
+     inc_low |  -.0107435   .0142114    -0.76   0.450     -.038628     .017141
+    inc_high |   .0162043   .0138415     1.17   0.242    -.0109545    .0433631
+    math_irt |   .0009954   .0006378     1.56   0.119    -.0002561     .002247
+    read_irt |  -.0011737   .0009111    -1.29   0.198    -.0029615    .0006141
+   frqabsent |  -.0251361    .022296    -1.13   0.260    -.0688838    .0186116
+    handicap |   .0058231   .0468106     0.12   0.901    -.0860253    .0976715
+        enr2 |   .0134391   .0236832     0.57   0.571    -.0330304    .0599087
+        enr3 |   .0181085   .0216708     0.84   0.404    -.0244124    .0606293
+        enr4 |   .0095578   .0249898     0.38   0.702    -.0394754    .0585911
+        enr5 |   .0118849   .0213579     0.56   0.578    -.0300221    .0537918
+        enr6 |   .0210953   .0219917     0.96   0.338    -.0220553    .0642458
+        enr7 |   .0529186   .0272742     1.94   0.053    -.0005968     .106434
+        enr8 |   .0182915   .0278851     0.66   0.512    -.0364227    .0730056
+        enr9 |   .0156179   .0297573     0.52   0.600    -.0427699    .0740056
+cont_catho~c |   .0436842   .0273771     1.60   0.111    -.0100333    .0974017
+cont_relig~s |   -.055152   .0382877    -1.44   0.150    -.1302774    .0199734
+cont_private |   .0348346    .037397     0.93   0.352    -.0385431    .1082123
+      urban2 |  -.0130425   .0161458    -0.81   0.419    -.0447226    .0186376
+      urban3 |  -.0152167   .0183214    -0.83   0.406    -.0511657    .0207322
+      urban4 |   -.123695   .0788623    -1.57   0.117    -.2784329    .0310429
+       _cons |   .1002648   .0480448     2.09   0.037     .0059948    .1945349
+------------------------------------------------------------------------------
+
+. 
+. rcr binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, clus
+> t(F1SCH_ID) lambda(-1 0)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4731
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.765453   .2589043    14.54   0.000      3.25801    4.272896
+    betaxInf |   .1642333   .0539775     3.04   0.002     .0584394    .2700273
+     lambda0 |   .4940349   .2115126     2.34   0.020     .0794778     .908592
+      betaxL |   .1642333   264792.3     0.00   1.000    -518983.3    518983.6
+      betaxH |   .1642333   264792.3     0.00   1.000    -518983.3    518983.6
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -518983.3    518983.6
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, clus
+> t(F1SCH_ID) lambda(0 .5)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4731
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.765453   .2589043    14.54   0.000      3.25801    4.272896
+    betaxInf |   .1642333   .0539775     3.04   0.002     .0584394    .2700273
+     lambda0 |   .4940349   .2115126     2.34   0.020     .0794778     .908592
+      betaxL |          0   .0215791     0.00   1.000    -.0422942    .0422942
+      betaxH |   .1642333   264792.3     0.00   1.000    -518983.3    518983.6
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0422942    518983.6
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if female, clus
+> t(F1SCH_ID)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4731
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1098 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.765453   .2589043    14.54   0.000      3.25801    4.272896
+    betaxInf |   .1642333   .0539775     3.04   0.002     .0584394    .2700273
+     lambda0 |   .4940349   .2115126     2.34   0.020     .0794778     .908592
+      betaxL |          0   .0215791     0.00   1.000    -.0422942    .0422942
+      betaxH |   .1642333   264792.3     0.00   1.000    -518983.3    518983.6
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0422942    518983.6
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. reg binge_drink varsity if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4213
+                                                       F(  1,  1080) =   40.82
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0096
+                                                       Root MSE      =  .48651
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0975253    .015264     6.39   0.000     .0675748    .1274758
+       _cons |   .3364596   .0115514    29.13   0.000     .3137938    .3591253
+------------------------------------------------------------------------------
+
+. 
+. reg binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, rob cl
+> ust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4213
+                                                       F( 32,  1080) =    5.30
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0371
+                                                       Root MSE      =  .48147
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |    .085408   .0155997     5.47   0.000     .0547988    .1160172
+        by73 |   .0646669   .0417087     1.55   0.121    -.0171723    .1465062
+        by74 |   .0605912   .0410862     1.47   0.141    -.0200266     .141209
+        by75 |   .0540063   .0846181     0.64   0.523    -.1120282    .2200408
+ race_native |   -.016831   .0804469    -0.21   0.834    -.1746809    .1410189
+  race_black |  -.1469473   .0282936    -5.19   0.000     -.202464   -.0914306
+   race_hisp |  -.0356842   .0275307    -1.30   0.195    -.0897039    .0183355
+    race_api |  -.1180389   .0271552    -4.35   0.000    -.1713219   -.0647559
+   hh_father |  -.0397269    .019682    -2.02   0.044    -.0783462   -.0011075
+   hh_mother |    .034166   .0301193     1.13   0.257     -.024933    .0932649
+   ed_mother |  -.0263909   .0212753    -1.24   0.215    -.0681365    .0153546
+   ed_father |   .0150056   .0220958     0.68   0.497    -.0283499    .0583611
+     inc_low |  -.0597936   .0222473    -2.69   0.007    -.1034465   -.0161407
+    inc_high |   .0630239   .0183594     3.43   0.001     .0269997    .0990481
+    math_irt |   .0001733   .0008795     0.20   0.844    -.0015524    .0018991
+    read_irt |  -.0018067   .0011804    -1.53   0.126    -.0041228    .0005094
+   frqabsent |  -.0082548   .0369202    -0.22   0.823    -.0806983    .0641886
+    handicap |  -.1044463   .0487249    -2.14   0.032    -.2000526   -.0088401
+        enr2 |    .032151   .0360056     0.89   0.372    -.0384979       .1028
+        enr3 |   .0135699   .0329732     0.41   0.681    -.0511288    .0782686
+        enr4 |  -.0160753   .0316684    -0.51   0.612    -.0782138    .0460632
+        enr5 |   -.016658   .0337296    -0.49   0.622     -.082841    .0495251
+        enr6 |  -.0446933   .0321395    -1.39   0.165    -.1077563    .0183696
+        enr7 |  -.0142261   .0374971    -0.38   0.704    -.0878015    .0593494
+        enr8 |  -.0207409   .0404631    -0.51   0.608     -.100136    .0586542
+        enr9 |  -.0400202   .0380098    -1.05   0.293    -.1146017    .0345612
+cont_catho~c |   .0565817   .0328507     1.72   0.085    -.0078767    .1210401
+cont_relig~s |  -.2006704   .0467386    -4.29   0.000    -.2923792   -.1089616
+cont_private |  -.0200403   .0433669    -0.46   0.644    -.1051332    .0650526
+      urban2 |   .0056014   .0203091     0.28   0.783    -.0342484    .0454512
+      urban3 |   .0001442   .0261104     0.01   0.996    -.0510888    .0513771
+      urban4 |  -.0824308   .1110249    -0.74   0.458    -.3002799    .1354182
+       _cons |    .356034   .0643747     5.53   0.000     .2297204    .4823476
+------------------------------------------------------------------------------
+
+. 
+. rcr binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(
+> F1SCH_ID) lambda(-1 0)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4213
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |    4.02715   .2725117    14.78   0.000     3.493037    4.561263
+    betaxInf |   .2940429   .0824127     3.57   0.000      .132517    .4555688
+     lambda0 |   .8311729   .2817996     2.95   0.003     .2788558     1.38349
+      betaxL |   .2940429   407168.3     0.00   1.000    -798034.9    798035.4
+      betaxH |   .2940429   407168.3     0.00   1.000    -798034.9    798035.4
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -798034.9    798035.4
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(
+> F1SCH_ID) lambda(0 .5)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4213
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |    4.02715   .2725117    14.78   0.000     3.493037    4.561263
+    betaxInf |   .2940429   .0824127     3.57   0.000      .132517    .4555688
+     lambda0 |   .8311729   .2817996     2.95   0.003     .2788558     1.38349
+      betaxL |   .2940429   407168.3     0.00   1.000    -798034.9    798035.4
+      betaxH |   .2940429   407168.3     0.00   1.000    -798034.9    798035.4
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -798034.9    798035.4
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr binge_drink varsity by73-by75 race_native race_black race_hisp race_api h
+> h_* ed_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 con
+> t_catholic cont_religious cont_private urban2 urban3 urban4   if male, clust(
+> F1SCH_ID)
+(25 missing values generated)
+(25 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     4213
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+ binge_drink |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |    4.02715   .2725117    14.78   0.000     3.493037    4.561263
+    betaxInf |   .2940429   .0824127     3.57   0.000      .132517    .4555688
+     lambda0 |   .8311729   .2817996     2.95   0.003     .2788558     1.38349
+      betaxL |          0    .038551     0.00   1.000    -.0755585    .0755585
+      betaxH |   .2940429   407168.3     0.00   1.000    -798034.9    798035.4
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0755585    798035.4
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. /*   Income and work Analysis   */
+. 
+. reg workft varsity if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4741
+                                                       F(  1,  1100) =    3.23
+                                                       Prob > F      =  0.0726
+                                                       R-squared     =  0.0007
+                                                       Root MSE      =  .44888
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0245559   .0136621     1.80   0.073    -.0022508    .0513626
+       _cons |   .7103327   .0089576    79.30   0.000     .6927568    .7279087
+------------------------------------------------------------------------------
+
+. 
+. reg workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, rob clust
+> (F1SCH_ID)
+
+Linear regression                                      Number of obs =    4741
+                                                       F( 32,  1100) =    3.07
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0206
+                                                       Root MSE      =  .44586
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0298444   .0138466     2.16   0.031     .0026756    .0570132
+        by73 |   .1707727   .0660944     2.58   0.010     .0410873     .300458
+        by74 |   .1911271   .0655892     2.91   0.004     .0624329    .3198212
+        by75 |   .1265907   .0907587     1.39   0.163     -.051489    .3046704
+ race_native |  -.0885349   .0632007    -1.40   0.162    -.2125424    .0354726
+  race_black |   .0566662   .0234926     2.41   0.016     .0105709    .1027616
+   race_hisp |  -.0420111   .0225727    -1.86   0.063    -.0863016    .0022793
+    race_api |  -.0611035   .0272101    -2.25   0.025    -.1144931    -.007714
+   hh_father |   .0380801   .0165615     2.30   0.022     .0055843    .0705758
+   hh_mother |   .0769162   .0323862     2.37   0.018     .0133706    .1404618
+   ed_mother |   .0198005   .0200526     0.99   0.324    -.0195451    .0591462
+   ed_father |  -.0262507   .0185693    -1.41   0.158     -.062686    .0101847
+     inc_low |    .005968    .018262     0.33   0.744    -.0298643    .0418004
+    inc_high |  -.0006363   .0163869    -0.04   0.969    -.0327894    .0315169
+    math_irt |  -.0000906   .0008544    -0.11   0.916    -.0017671     .001586
+    read_irt |   .0010356   .0011293     0.92   0.359    -.0011803    .0032515
+   frqabsent |  -.0596351   .0286584    -2.08   0.038    -.1158664   -.0034039
+    handicap |  -.0746982   .0625579    -1.19   0.233    -.1974445     .048048
+        enr2 |  -.0151865   .0292318    -0.52   0.604    -.0725428    .0421698
+        enr3 |   .0321769   .0275449     1.17   0.243    -.0218695    .0862233
+        enr4 |   .0414344   .0293737     1.41   0.159    -.0162005    .0990692
+        enr5 |   .0433733   .0271151     1.60   0.110    -.0098299    .0965765
+        enr6 |   .0765094   .0265115     2.89   0.004     .0244906    .1285282
+        enr7 |   .0509006   .0311561     1.63   0.103    -.0102316    .1120327
+        enr8 |   .0306785   .0351309     0.87   0.383    -.0382528    .0996097
+        enr9 |   .0251532   .0371746     0.68   0.499     -.047788    .0980944
+cont_catho~c |   .0494989   .0307542     1.61   0.108    -.0108445    .1098424
+cont_relig~s |  -.1012505   .0441817    -2.29   0.022    -.1879405   -.0145605
+cont_private |   -.081875   .0446736    -1.83   0.067    -.1695301    .0057801
+      urban2 |  -.0272546   .0187667    -1.45   0.147    -.0640771    .0095679
+      urban3 |  -.0023726   .0210606    -0.11   0.910    -.0436961    .0389509
+      urban4 |  -.1362442   .1177951    -1.16   0.248    -.3673726    .0948842
+       _cons |   .3892275   .0846645     4.60   0.000     .2231053    .5553496
+------------------------------------------------------------------------------
+
+. 
+. rcr workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1S
+> CH_ID) lambda(-1 0)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4741
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.756059   .2562956    14.66   0.000     3.253729    4.258389
+    betaxInf |   -.050054   .0636162    -0.79   0.431    -.1747395    .0746314
+     lambda0 |  -1.189587   1.612177    -0.74   0.461    -4.349396    1.970223
+      betaxL |   .0031818   .0233126     0.14   0.891    -.0425101    .0488737
+      betaxH |   .0298444   .0137998     2.16   0.031     .0027972    .0568916
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0425101    .0568916
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1S
+> CH_ID) lambda(0 .5)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4741
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.756059   .2562956    14.66   0.000     3.253729    4.258389
+    betaxInf |   -.050054   .0636162    -0.79   0.431    -.1747395    .0746314
+     lambda0 |  -1.189587   1.612177    -0.74   0.461    -4.349396    1.970223
+      betaxL |   .0298444   .0137998     2.16   0.031     .0027972    .0568916
+      betaxH |   .0559545   .0266205     2.10   0.036     .0037793    .1081298
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0027972    .1081298
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1S
+> CH_ID)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4741
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.756059   .2562956    14.66   0.000     3.253729    4.258389
+    betaxInf |   -.050054   .0636162    -0.79   0.431    -.1747395    .0746314
+     lambda0 |  -1.189587   1.612177    -0.74   0.461    -4.349396    1.970223
+      betaxL |   .0298444   .0137998     2.16   0.031     .0027972    .0568916
+      betaxH |   .1042894   .0587582     1.77   0.076    -.0108746    .2194535
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0027972    .2194535
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. reg workft varsity if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F(  1,  1080) =    0.02
+                                                       Prob > F      =  0.8824
+                                                       R-squared     =  0.0000
+                                                       Root MSE      =  .36285
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0017498   .0118217     0.15   0.882    -.0214462    .0249459
+       _cons |   .8430572   .0090412    93.25   0.000     .8253168    .8607976
+------------------------------------------------------------------------------
+
+. 
+. reg workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, rob clust(F
+> 1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F( 32,  1080) =    4.65
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0347
+                                                       Root MSE      =  .35782
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0071433   .0120378     0.59   0.553    -.0164767    .0307634
+        by73 |  -.0580408   .0269306    -2.16   0.031     -.110883   -.0051986
+        by74 |  -.0515611   .0264371    -1.95   0.051    -.1034351    .0003129
+        by75 |    .054088   .0563001     0.96   0.337    -.0563819    .1645579
+ race_native |  -.0703379   .0722256    -0.97   0.330    -.2120564    .0713805
+  race_black |  -.0794084   .0242354    -3.28   0.001    -.1269622   -.0318546
+   race_hisp |  -.0413764   .0193778    -2.14   0.033    -.0793988   -.0033541
+    race_api |   -.093778   .0254175    -3.69   0.000    -.1436513   -.0439047
+   hh_father |   .0345389    .014885     2.32   0.021      .005332    .0637458
+   hh_mother |   .0276399    .024568     1.13   0.261    -.0205665    .0758462
+   ed_mother |  -.0054328   .0161173    -0.34   0.736    -.0370575     .026192
+   ed_father |  -.0287071   .0155853    -1.84   0.066    -.0592879    .0018738
+     inc_low |  -.0131247   .0159313    -0.82   0.410    -.0443845    .0181351
+    inc_high |  -.0274181   .0150118    -1.83   0.068    -.0568737    .0020375
+    math_irt |  -.0017329   .0006722    -2.58   0.010    -.0030519    -.000414
+    read_irt |  -.0017566   .0009206    -1.91   0.057     -.003563    .0000497
+   frqabsent |  -.0290383   .0272643    -1.07   0.287    -.0825353    .0244587
+    handicap |   .0089539   .0387081     0.23   0.817    -.0669976    .0849054
+        enr2 |  -.0275717   .0201558    -1.37   0.172    -.0671207    .0119772
+        enr3 |   -.049939   .0210802    -2.37   0.018    -.0913017   -.0085762
+        enr4 |  -.0407936   .0205528    -1.98   0.047    -.0811216   -.0004656
+        enr5 |  -.0374422   .0208442    -1.80   0.073     -.078342    .0034576
+        enr6 |  -.0518276   .0197756    -2.62   0.009    -.0906306   -.0130247
+        enr7 |  -.0432464   .0244362    -1.77   0.077    -.0911941    .0047014
+        enr8 |  -.0528272   .0290371    -1.82   0.069    -.1098028    .0041483
+        enr9 |  -.0328022   .0270982    -1.21   0.226    -.0859734     .020369
+cont_catho~c |   .0053549   .0247502     0.22   0.829     -.043209    .0539189
+cont_relig~s |  -.0865933   .0485109    -1.79   0.075    -.1817797     .008593
+cont_private |  -.0424151   .0325216    -1.30   0.192    -.1062277    .0213975
+      urban2 |   .0423922   .0156571     2.71   0.007     .0116705    .0731139
+      urban3 |   .0413142   .0179654     2.30   0.022     .0060631    .0765653
+      urban4 |  -.0098224   .0705259    -0.14   0.889    -.1482057    .1285609
+       _cons |   1.004095   .0440907    22.77   0.000     .9175822    1.090608
+------------------------------------------------------------------------------
+
+. 
+. rcr workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH
+> _ID) lambda(-1 0)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |  -.0861835   .0618685    -1.39   0.164    -.2074436    .0350765
+     lambda0 |  -.2557747   .4629849    -0.55   0.581    -1.163208    .6516591
+      betaxL |  -.0157708   .0174286    -0.90   0.366    -.0499302    .0183887
+      betaxH |   .0071433   .0119921     0.60   0.551    -.0163608    .0306474
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0499302    .0306474
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH
+> _ID) lambda(0 .5)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |  -.0861835   .0618685    -1.39   0.164    -.2074436    .0350765
+     lambda0 |  -.2557747   .4629849    -0.55   0.581    -1.163208    .6516591
+      betaxL |   .0071433   .0119921     0.60   0.551    -.0163608    .0306474
+      betaxH |   .0250331   .0184229     1.36   0.174    -.0110752    .0611414
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0163608    .0611414
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr workft varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH
+> _ID)
+(1 missing value generated)
+(1 missing value generated)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      workft |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |  -.0861835   .0618685    -1.39   0.164    -.2074436    .0350765
+     lambda0 |  -.2557747   .4629849    -0.55   0.581    -1.163208    .6516591
+      betaxL |   .0071433   .0119921     0.60   0.551    -.0163608    .0306474
+      betaxH |   .0508794   .0328193     1.55   0.121    -.0134453    .1152041
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0163608    .1152041
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. gen loginc = log(inc99)
+(1033 missing values generated)
+
+. 
+. reg loginc varsity if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4072
+                                                       F(  1,  1061) =   28.54
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0064
+                                                       Root MSE      =  .80152
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .1311709   .0245514     5.34   0.000     .0829961    .1793458
+       _cons |   9.778054   .0173468   563.68   0.000     9.744016    9.812092
+------------------------------------------------------------------------------
+
+. 
+. reg loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, rob clust
+> (F1SCH_ID)
+
+Linear regression                                      Number of obs =    4072
+                                                       F( 32,  1061) =    8.60
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0601
+                                                       Root MSE      =  .78254
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0868426   .0251828     3.45   0.001     .0374289    .1362563
+        by73 |   .2981699    .169973     1.75   0.080    -.0353515    .6316912
+        by74 |   .3424094   .1676159     2.04   0.041     .0135131    .6713057
+        by75 |   .3515354    .203321     1.73   0.084    -.0474215    .7504923
+ race_native |  -.3878659   .1746905    -2.22   0.027    -.7306441   -.0450877
+  race_black |   .1003604   .0482281     2.08   0.038     .0057271    .1949937
+   race_hisp |   .0254094   .0425612     0.60   0.551    -.0581044    .1089231
+    race_api |   .0241857   .0546003     0.44   0.658    -.0829512    .1313225
+   hh_father |   .0644756   .0315395     2.04   0.041     .0025886    .1263625
+   hh_mother |  -.0433947   .0483331    -0.90   0.369     -.138234    .0514447
+   ed_mother |  -.0184238   .0374439    -0.49   0.623    -.0918962    .0550487
+   ed_father |   .0502378   .0344024     1.46   0.145    -.0172667    .1177423
+     inc_low |  -.1194239    .035445    -3.37   0.001    -.1889741   -.0498738
+    inc_high |   .0215701   .0334233     0.65   0.519    -.0440133    .0871535
+    math_irt |   .0078394   .0015279     5.13   0.000     .0048414    .0108374
+    read_irt |   .0024429   .0019779     1.24   0.217     -.001438    .0063239
+   frqabsent |  -.0751017   .0552477    -1.36   0.174    -.1835089    .0333054
+    handicap |  -.0052855   .0971543    -0.05   0.957    -.1959219    .1853509
+        enr2 |  -.0377166   .0507388    -0.74   0.457    -.1372763    .0618431
+        enr3 |   .0961921   .0461942     2.08   0.038     .0055497    .1868344
+        enr4 |   .0734741   .0520694     1.41   0.159    -.0286966    .1756448
+        enr5 |    .023433   .0540915     0.43   0.665    -.0827054    .1295715
+        enr6 |   .0930563   .0520382     1.79   0.074    -.0090532    .1951658
+        enr7 |   .0451256    .057138     0.79   0.430    -.0669907    .1572418
+        enr8 |    -.04349   .0688253    -0.63   0.528    -.1785392    .0915591
+        enr9 |   .1531566   .0704007     2.18   0.030     .0150162    .2912969
+cont_catho~c |   .2078538    .054579     3.81   0.000     .1007588    .3149488
+cont_relig~s |  -.0766762   .0940343    -0.82   0.415    -.2611906    .1078383
+cont_private |  -.0022212   .0679896    -0.03   0.974    -.1356306    .1311882
+      urban2 |    .036425   .0356212     1.02   0.307     -.033471     .106321
+      urban3 |  -.0304634   .0406252    -0.75   0.454    -.1101782    .0492513
+      urban4 |   .4513851   .1418105     3.18   0.001     .1731242     .729646
+       _cons |   9.030245   .1911073    47.25   0.000     8.655254    9.405236
+------------------------------------------------------------------------------
+
+. 
+. rcr loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1S
+> CH_ID) lambda(-1 0)
+(1033 missing values generated)
+(1033 missing values generated)
+
+
+RCR model                                             Number of obs =     4072
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.590717   .2459257    14.60   0.000     3.108711    4.072722
+    betaxInf |   .7027068   .1267316     5.54   0.000     .4543174    .9510961
+     lambda0 |    .393628   .1370936     2.87   0.004     .1249295    .6623266
+      betaxL |   .0868426   .0250837     3.46   0.001     .0376795    .1360057
+      betaxH |   .2423717   .0367662     6.59   0.000     .1703114    .3144321
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0376795    .3144321
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1S
+> CH_ID) lambda(0 .5)
+(1033 missing values generated)
+(1033 missing values generated)
+
+
+RCR model                                             Number of obs =     4072
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.590717   .2459257    14.60   0.000     3.108711    4.072722
+    betaxInf |   .7027068   .1267316     5.54   0.000     .4543174    .9510961
+     lambda0 |    .393628   .1370936     2.87   0.004     .1249295    .6623266
+      betaxL |  -.0267738   .0373509    -0.72   0.473    -.0999803    .0464326
+      betaxH |   .0868426   .0250837     3.46   0.001     .0376795    .1360057
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0999803    .1360057
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1S
+> CH_ID)
+(1033 missing values generated)
+(1033 missing values generated)
+
+
+RCR model                                             Number of obs =     4072
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1062 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.590717   .2459257    14.60   0.000     3.108711    4.072722
+    betaxInf |   .7027068   .1267316     5.54   0.000     .4543174    .9510961
+     lambda0 |    .393628   .1370936     2.87   0.004     .1249295    .6623266
+      betaxL |  -.1755349   .0618666    -2.84   0.005    -.2967913   -.0542786
+      betaxH |   .0868426   .0250837     3.46   0.001     .0376795    .1360057
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.2967913    .1360057
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. reg loginc varsity if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    3864
+                                                       F(  1,  1062) =   24.70
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0064
+                                                       Root MSE      =   .6977
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .1138109   .0229006     4.97   0.000     .0688753    .1587464
+       _cons |   10.10093   .0186201   542.48   0.000     10.06439    10.13747
+------------------------------------------------------------------------------
+
+. 
+. reg loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, rob clust(F
+> 1SCH_ID)
+
+Linear regression                                      Number of obs =    3864
+                                                       F( 32,  1062) =    4.75
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0303
+                                                       Root MSE      =  .69202
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .1022817   .0234067     4.37   0.000     .0563531    .1482103
+        by73 |   -.004748   .0658914    -0.07   0.943    -.1340401    .1245441
+        by74 |  -.0013172   .0643655    -0.02   0.984    -.1276152    .1249808
+        by75 |   .1844985   .1203403     1.53   0.126    -.0516333    .4206302
+ race_native |  -.2617473   .1319227    -1.98   0.048    -.5206061   -.0028884
+  race_black |  -.1185828    .039507    -3.00   0.003    -.1961034   -.0410621
+   race_hisp |  -.1433958   .0437578    -3.28   0.001    -.2292574   -.0575343
+    race_api |  -.0099241   .0617103    -0.16   0.872     -.131012    .1111638
+   hh_father |    .085653   .0285838     3.00   0.003     .0295658    .1417402
+   hh_mother |  -.0033425   .0438525    -0.08   0.939    -.0893899    .0827049
+   ed_mother |   .0521448   .0329284     1.58   0.114    -.0124673    .1167569
+   ed_father |   -.041058   .0336112    -1.22   0.222      -.10701    .0248939
+     inc_low |  -.0560642   .0294249    -1.91   0.057    -.1138018    .0016733
+    inc_high |   .0295683   .0281798     1.05   0.294    -.0257261    .0848627
+    math_irt |   .0033108   .0013873     2.39   0.017     .0005888    .0060329
+    read_irt |  -.0058652    .001813    -3.24   0.001    -.0094226   -.0023078
+   frqabsent |  -.0759032   .0508343    -1.49   0.136    -.1756503    .0238439
+    handicap |   .0099107   .0771092     0.13   0.898     -.141393    .1612143
+        enr2 |   .0224925   .0420516     0.53   0.593     -.060021    .1050061
+        enr3 |   .0139949   .0468016     0.30   0.765    -.0778392     .105829
+        enr4 |   .0393606   .0440578     0.89   0.372    -.0470896    .1258107
+        enr5 |   .0312611   .0415093     0.75   0.452    -.0501884    .1127106
+        enr6 |  -.0338994   .0448834    -0.76   0.450    -.1219696    .0541708
+        enr7 |  -.0122125    .051559    -0.24   0.813    -.1133816    .0889565
+        enr8 |   .0773277   .0633874     1.22   0.223    -.0470509    .2017064
+        enr9 |   .0957319   .0653506     1.46   0.143    -.0324991    .2239629
+cont_catho~c |   .1048351    .049442     2.12   0.034     .0078199    .2018503
+cont_relig~s |   .0711166    .105327     0.68   0.500    -.1355561    .2777893
+cont_private |  -.0095679   .0629445    -0.15   0.879    -.1330776    .1139417
+      urban2 |   .0442374   .0328301     1.35   0.178    -.0201818    .1086567
+      urban3 |     .08559   .0361863     2.37   0.018     .0145853    .1565947
+      urban4 |  -.3876271   .1363182    -2.84   0.005    -.6551107   -.1201436
+       _cons |   10.03599   .1034573    97.01   0.000     9.832986    10.23899
+------------------------------------------------------------------------------
+
+. 
+. rcr loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH
+> _ID) lambda(-1 0)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     3864
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.086614   .2935806    13.92   0.000     3.511206    4.662021
+    betaxInf |   .3063521   .1193132     2.57   0.010     .0725026    .5402016
+     lambda0 |   .9016133   .3946297     2.28   0.022     .1281533    1.675073
+      betaxL |   .3063521   43430.19     0.00   1.000     -85121.3    85121.92
+      betaxH |   .3063521   43430.19     0.00   1.000     -85121.3    85121.92
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      -85121.3    85121.92
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH
+> _ID) lambda(0 .5)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     3864
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.086614   .2935806    13.92   0.000     3.511206    4.662021
+    betaxInf |   .3063521   .1193132     2.57   0.010     .0725026    .5402016
+     lambda0 |   .9016133   .3946297     2.28   0.022     .1281533    1.675073
+      betaxL |   .3063521   43430.19     0.00   1.000     -85121.3    85121.92
+      betaxH |   .3063521   43430.19     0.00   1.000     -85121.3    85121.92
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      -85121.3    85121.92
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr loginc varsity by73-by75 race_native race_black race_hisp race_api hh_* e
+> d_*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cat
+> holic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH
+> _ID)
+(1033 missing values generated)
+(1033 missing values generated)
+
+ Warning: Inaccurate SE for thetaL/H. Try normalizing variables to mean zero.
+
+
+RCR model                                             Number of obs =     3864
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1063 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+      loginc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.086614   .2935806    13.92   0.000     3.511206    4.662021
+    betaxInf |   .3063521   .1193132     2.57   0.010     .0725026    .5402016
+     lambda0 |   .9016133   .3946297     2.28   0.022     .1281533    1.675073
+      betaxL |          0   .0643811     0.00   1.000    -.1261846    .1261846
+      betaxH |   .3063521   43430.19     0.00   1.000     -85121.3    85121.92
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1261846    85121.92
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. /*  Voter Analysis  */
+. 
+. reg voter varsity if female, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F(  1,  1100) =    8.89
+                                                       Prob > F      =  0.0029
+                                                       R-squared     =  0.0019
+                                                       Root MSE      =  .45144
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |    .039785   .0133437     2.98   0.003     .0136031    .0659669
+       _cons |   .6984238   .0092087    75.84   0.000     .6803552    .7164924
+------------------------------------------------------------------------------
+
+. 
+. reg voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if female, rob clust(
+> F1SCH_ID)
+
+Linear regression                                      Number of obs =    4742
+                                                       F( 32,  1100) =   10.20
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0566
+                                                       Root MSE      =  .44033
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0044801   .0133332     0.34   0.737    -.0216813    .0306416
+        by73 |  -.0429002    .059732    -0.72   0.473    -.1601018    .0743013
+        by74 |  -.0457338   .0592553    -0.77   0.440        -.162    .0705324
+        by75 |  -.2358129   .0883733    -2.67   0.008    -.4092122   -.0624137
+ race_native |  -.0637469     .05882    -1.08   0.279    -.1791589    .0516651
+  race_black |   .0487146   .0261464     1.86   0.063    -.0025878    .1000169
+   race_hisp |  -.0333576    .024881    -1.34   0.180    -.0821772    .0154621
+    race_api |  -.2102803   .0279905    -7.51   0.000    -.2652012   -.1553595
+   hh_father |   .0275353   .0167004     1.65   0.099     -.005233    .0603036
+   hh_mother |   .0137544   .0313698     0.44   0.661     -.047797    .0753059
+   ed_mother |   .0222996   .0179875     1.24   0.215    -.0129941    .0575934
+   ed_father |   .0722126   .0170088     4.25   0.000     .0388393    .1055858
+     inc_low |  -.0246529   .0185875    -1.33   0.185    -.0611238     .011818
+    inc_high |  -.0004796   .0158963    -0.03   0.976    -.0316702     .030711
+    math_irt |   .0015137   .0008102     1.87   0.062     -.000076    .0031033
+    read_irt |   .0052647   .0011061     4.76   0.000     .0030943     .007435
+   frqabsent |  -.0210581   .0297655    -0.71   0.479    -.0794616    .0373454
+    handicap |   .0398406   .0540335     0.74   0.461    -.0661798    .1458611
+        enr2 |  -.0075594   .0265572    -0.28   0.776     -.059668    .0445492
+        enr3 |  -.0512502   .0294081    -1.74   0.082    -.1089526    .0064521
+        enr4 |  -.0437538   .0302227    -1.45   0.148    -.1030545    .0155469
+        enr5 |  -.0526233   .0277125    -1.90   0.058    -.1069986    .0017519
+        enr6 |  -.0097124   .0283346    -0.34   0.732    -.0653084    .0458836
+        enr7 |  -.0040898   .0311128    -0.13   0.895     -.065137    .0569573
+        enr8 |  -.0535804   .0344815    -1.55   0.120    -.1212375    .0140766
+        enr9 |  -.0585102   .0368547    -1.59   0.113    -.1308236    .0138031
+cont_catho~c |   .0189175   .0291977     0.65   0.517     -.038372    .0762069
+cont_relig~s |  -.0062448   .0514657    -0.12   0.903     -.107227    .0947373
+cont_private |   .0513692   .0339625     1.51   0.131    -.0152693    .1180078
+      urban2 |   .0055919   .0179433     0.31   0.755     -.029615    .0407988
+      urban3 |    .012974   .0211836     0.61   0.540    -.0285907    .0545388
+      urban4 |  -.0500906   .1568174    -0.32   0.749    -.3577857    .2576045
+       _cons |   .5294396    .074913     7.07   0.000     .3824512    .6764281
+------------------------------------------------------------------------------
+
+. 
+. rcr voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1SC
+> H_ID) lambda(-1 0)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.754071   .2559418    14.67   0.000     3.252434    4.255708
+    betaxInf |   .5373378   .0708927     7.58   0.000     .3983907    .6762849
+     lambda0 |    .028775   .0852755     0.34   0.736     -.138362     .195912
+      betaxL |   .0044801   .0132882     0.34   0.736    -.0215642    .0305245
+      betaxH |   .1342135   .0206395     6.50   0.000     .0937608    .1746662
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0215642    .1746662
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1SC
+> H_ID) lambda(0 .5)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.754071   .2559418    14.67   0.000     3.252434    4.255708
+    betaxInf |   .5373378   .0708927     7.58   0.000     .3983907    .6762849
+     lambda0 |    .028775   .0852755     0.34   0.736     -.138362     .195912
+      betaxL |  -.0801263   .0174576    -4.59   0.000    -.1143425   -.0459101
+      betaxH |   .0044801   .0132882     0.34   0.736    -.0215642    .0305245
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1143425    .0305245
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if female, clust(F1SC
+> H_ID)
+
+
+RCR model                                             Number of obs =     4742
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1101 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   3.754071   .2559418    14.67   0.000     3.252434    4.255708
+    betaxInf |   .5373378   .0708927     7.58   0.000     .3983907    .6762849
+     lambda0 |    .028775   .0852755     0.34   0.736     -.138362     .195912
+      betaxL |  -.1807603     .02694    -6.71   0.000    -.2335618   -.1279588
+      betaxH |   .0044801   .0132882     0.34   0.736    -.0215642    .0305245
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.2335618    .0305245
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. reg voter varsity if male, rob clust(F1SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F(  1,  1080) =   20.80
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0054
+                                                       Root MSE      =  .45732
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |   .0687243   .0150701     4.56   0.000     .0391544    .0982943
+       _cons |   .6586931   .0124656    52.84   0.000     .6342336    .6831527
+------------------------------------------------------------------------------
+
+. 
+. reg voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if male, rob clust(F1
+> SCH_ID)
+
+Linear regression                                      Number of obs =    4227
+                                                       F( 32,  1080) =    9.50
+                                                       Prob > F      =  0.0000
+                                                       R-squared     =  0.0680
+                                                       Root MSE      =  .44433
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+     varsity |    .043849   .0147806     2.97   0.003     .0148471    .0728508
+        by73 |   .0664107   .0445955     1.49   0.137     -.021093    .1539144
+        by74 |   .0936393   .0433577     2.16   0.031     .0085644    .1787141
+        by75 |   -.047211   .0924458    -0.51   0.610    -.2286047    .1341827
+ race_native |  -.0366528   .0723975    -0.51   0.613    -.1787086    .1054029
+  race_black |   .0338025   .0283963     1.19   0.234    -.0219158    .0895207
+   race_hisp |   -.073278   .0262242    -2.79   0.005    -.1247341   -.0218219
+    race_api |  -.2368846   .0303903    -7.79   0.000    -.2965154   -.1772538
+   hh_father |   .0215647   .0179714     1.20   0.230    -.0136981    .0568274
+   hh_mother |   .0182114    .030841     0.59   0.555    -.0423036    .0787264
+   ed_mother |   .0641022   .0181416     3.53   0.000     .0285054     .099699
+   ed_father |  -.0005524   .0190171    -0.03   0.977     -.037867    .0367621
+     inc_low |  -.0803285   .0214028    -3.75   0.000    -.1223242   -.0383328
+    inc_high |   .0054453   .0162932     0.33   0.738    -.0265246    .0374152
+    math_irt |   .0018554   .0008697     2.13   0.033      .000149    .0035619
+    read_irt |   .0036335   .0011644     3.12   0.002     .0013487    .0059183
+   frqabsent |   .0334593   .0340827     0.98   0.326    -.0334164    .1003351
+    handicap |  -.0051439    .053774    -0.10   0.924    -.1106573    .1003694
+        enr2 |  -.0341788   .0307547    -1.11   0.267    -.0945247     .026167
+        enr3 |  -.0510261   .0306018    -1.67   0.096    -.1110718    .0090197
+        enr4 |  -.0323391   .0290307    -1.11   0.266     -.089302    .0246239
+        enr5 |  -.0474273   .0310898    -1.53   0.127    -.1084305    .0135759
+        enr6 |  -.0387659    .031182    -1.24   0.214      -.09995    .0224183
+        enr7 |  -.0175761    .033891    -0.52   0.604    -.0840758    .0489236
+        enr8 |  -.0482768    .042587    -1.13   0.257    -.1318395    .0352858
+        enr9 |   -.098332   .0455052    -2.16   0.031    -.1876206   -.0090434
+cont_catho~c |   .0164456   .0289029     0.57   0.569    -.0402667    .0731579
+cont_relig~s |  -.0220098   .0570438    -0.39   0.700     -.133939    .0899194
+cont_private |   .0168673   .0361424     0.47   0.641    -.0540499    .0877846
+      urban2 |  -.0313681   .0207871    -1.51   0.132    -.0721558    .0094196
+      urban3 |  -.0144313   .0258538    -0.56   0.577    -.0651607    .0362982
+      urban4 |   -.017212   .0786617    -0.22   0.827    -.1715591    .1371351
+       _cons |   .4575295   .0651563     7.02   0.000     .3296823    .5853767
+------------------------------------------------------------------------------
+
+. 
+. rcr voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH_
+> ID) lambda(-1 0)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =       -1
+                                             Upper bound on lambda  =        0
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |   .4742807   .0908732     5.22   0.000     .2961725    .6523888
+     lambda0 |   .4004424   .1531062     2.62   0.009     .1003598     .700525
+      betaxL |    .043849   .0147245     2.98   0.003     .0149895    .0727084
+      betaxH |     .12853   .0219889     5.85   0.000     .0854326    .1716274
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)      .0149895    .1716274
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH_
+> ID) lambda(0 .5)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =       .5
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |   .4742807   .0908732     5.22   0.000     .2961725    .6523888
+     lambda0 |   .4004424   .1531062     2.62   0.009     .1003598     .700525
+      betaxL |  -.0120034   .0196224    -0.61   0.541    -.0504626    .0264558
+      betaxH |    .043849   .0147245     2.98   0.003     .0149895    .0727084
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.0504626    .0727084
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. rcr voter varsity by73-by75 race_native race_black race_hisp race_api hh_* ed
+> _*  inc_low inc_high math_irt read_irt frqabsent handicap enr2-enr9 cont_cath
+> olic cont_religious cont_private urban2 urban3 urban4   if male, clust(F1SCH_
+> ID)
+
+
+RCR model                                             Number of obs =     4227
+                                             Lower bound on lambda  =        0
+                                             Upper bound on lambda  =        1
+
+
+                            (Std. Err. adjusted for 1081 clusters in F1SCH_ID)
+------------------------------------------------------------------------------
+             |               Robust
+       voter |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+   lambdaInf |   4.037765   .2736629    14.75   0.000     3.501395    4.574134
+    betaxInf |   .4742807   .0908732     5.22   0.000     .2961725    .6523888
+     lambda0 |   .4004424   .1531062     2.62   0.009     .1003598     .700525
+      betaxL |  -.0801057   .0302933    -2.64   0.008    -.1394795    -.020732
+      betaxH |    .043849   .0147245     2.98   0.003     .0149895    .0727084
+-------------+----------------------------------------------------------------
+       betax |    (Conservative confidence interval)     -.1394795    .0727084
+------------------------------------------------------------------------------
+Treatment Variable:   varsity
+Control Variables :   by73 by74 by75 race_native race_black race_hisp race_api
+                      hh_father hh_mother ed_mother ed_father inc_low inc_high
+                      math_irt read_irt frqabsent handicap enr2 enr3 enr4 enr5
+                      enr6 enr7 enr8 enr9 cont_catholic cont_religious
+                      cont_private urban2 urban3 urban4
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /hpchome/econ/tmr17/HSsports/NELS88analysis/NELS88reg05_varsity.lo
+> g
+  log type:  text
+ closed on:   3 Oct 2017, 07:40:51
+-------------------------------------------------------------------------------
